@@ -1,0 +1,11 @@
+nltk
+tqdm
+unidecode
+numpy
+ray
+pyarrow
+pandas
+textdistance
+viet-text-tools
+rapidfuzz
+underthesea
