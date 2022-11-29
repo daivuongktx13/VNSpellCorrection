@@ -424,7 +424,8 @@ class SynthesizeData(object):
         for candidate in candidates:
             replaced = self.replace_char_candidate_typo(candidate)
             # Move accent to the end of text
-            if len(result:=re.findall(accent_pattern, replaced)) != 0:
+            result = re.findall(accent_pattern, replaced)
+            if len(result) != 0:
                 word_noise = re.sub(candidate, replaced[0:-1], word_noise)
                 word_noise += replaced[-1]
             else:
