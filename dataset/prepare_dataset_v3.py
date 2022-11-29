@@ -23,13 +23,13 @@ class PrepareActor(object):
     def __init__(self, id, lang, data_root='../data', corpus="binhbq") -> None:
         self.data_root, self.lang, self.corpus = data_root, lang, corpus
         self.id = id
-        self.data_dir = f'{data_root}/{corpus}' + str(id)
+        self.data_dir = f'{data_root}/{corpus}'
 
     def open_files(self):
-        self.train_noise_file_name = f'{self.corpus}.train.noise'
-        self.train_file_name =  f'{self.corpus}.train'
-        self.train_onehot_file_name = f'{self.corpus}.onehot.train'
-        self.train_length_file_name = f'{self.corpus}.length.train'
+        self.train_noise_file_name = f'{self.corpus}.train.noise'  + str(self.id)
+        self.train_file_name =  f'{self.corpus}.train'  + str(self.id)
+        self.train_onehot_file_name = f'{self.corpus}.onehot.train'  + str(self.id)
+        self.train_length_file_name = f'{self.corpus}.length.train' + str(self.id)
         self.train_file_path = self.data_dir + '/' + self.train_file_name
         self.train_noise_file_path = self.data_dir + '/' + self.train_noise_file_name
         self.train_onehot_file_path = self.data_dir + '/' + self.train_onehot_file_name
@@ -39,10 +39,10 @@ class PrepareActor(object):
         self.train_onehot_file = open(self.train_onehot_file_path, 'w', encoding='utf-8')
         self.train_length_file = open(self.train_length_file_path, 'w', encoding='utf-8')
 
-        self.test_file_name =  f'{self.corpus}.test'
-        self.test_noise_file_name =  f'{self.corpus}.test.noise'
-        self.test_onehot_file_name = f'{self.corpus}.onehot.test'
-        self.test_length_file_name = f'{self.corpus}.length.test'
+        self.test_file_name =  f'{self.corpus}.test'  + str(self.id)
+        self.test_noise_file_name =  f'{self.corpus}.test.noise'  + str(self.id)
+        self.test_onehot_file_name = f'{self.corpus}.onehot.test'  + str(self.id)
+        self.test_length_file_name = f'{self.corpus}.length.test'  + str(self.id)
         self.test_file_path = self.data_dir + '/' + self.test_file_name
         self.test_noise_file_path = self.data_dir + '/' + self.test_noise_file_name
         self.test_onehot_file_path = self.data_dir + '/' + self.test_onehot_file_name
