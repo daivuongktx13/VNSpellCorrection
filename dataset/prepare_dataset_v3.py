@@ -71,7 +71,7 @@ class PrepareActor(object):
         
         print(f"{dt.now()} PrepareActor[{self.id}].prepare_sublist_and_vocab() BEGIN...")
 
-        for line in lines.iter_rows():
+        for line in tqdm(lines.iter_rows()):
             line = line.strip("\n")
             words = line.split(" ")
             ###
