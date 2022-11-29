@@ -12,7 +12,6 @@ import numpy as np
 from params import PERCENT_NOISE, NUM_CPUS, NUM_PROCESSES
 from utils.logger import get_logger
 from viet_text_tools import normalize_diacritics
-from tqdm import tqdm
 
 from transformers import AutoTokenizer
 PHOBERT_MAX_SEQ_LEN = 256
@@ -71,7 +70,7 @@ class PrepareActor(object):
         
         print(f"{dt.now()} PrepareActor[{self.id}].prepare_sublist_and_vocab() BEGIN...")
 
-        for line in tqdm(lines.iter_rows()):
+        for line in lines.iter_rows():
             line = line.strip("\n")
             words = line.split(" ")
             ###
@@ -112,7 +111,7 @@ class PrepareActor(object):
         train_examples = 0
         max_train_examples = int(0.9 * len(self.subword_sents))
 
-        for line in tqdm(self.subword_sents):
+        for line in self.subword_sents:
             train_examples += 1
 
             if train_examples < max_train_examples:
