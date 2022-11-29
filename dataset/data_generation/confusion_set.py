@@ -38,18 +38,23 @@ for syllable in tqdm(vi_syllables_new):
     syllable_candidates['nguyen_am'] = set()
     syllable_candidates['phu_am_cuoi'] = set()
 
-    if len(result:=re.findall(regex_nguyen_am_ba, syllable)) != 0:
+    if len(re.findall(regex_nguyen_am_ba, syllable)) != 0:
+        result = re.findall(regex_nguyen_am_ba, syllable)
         nguyen_am = result[0]
-    elif len(result:=re.findall(regex_nguyen_am_doi, syllable)) != 0:
+    elif len(re.findall(regex_nguyen_am_doi, syllable)) != 0:
+        result = re.findall(regex_nguyen_am_doi, syllable)
         nguyen_am = result[0]
-    elif len(result:=re.findall(regex_nguyen_am_don, syllable)) != 0:
+    elif len(re.findall(regex_nguyen_am_don, syllable)) != 0:
+        result = re.findall(regex_nguyen_am_don, syllable)
         nguyen_am = result[0]
     else:
         raise Exception("Khong co nguyen am")
     phu_am_dau, phu_am_cuoi = "", ""
-    if len(result:=re.findall(f"(.+){nguyen_am}", syllable)) !=0 :
+    if len(re.findall(f"(.+){nguyen_am}", syllable)) !=0 :
+        result = re.findall(f"(.+){nguyen_am}", syllable)
         phu_am_dau = result[0]
-    if len(result:=re.findall(f"{nguyen_am}(.+)", syllable)) !=0 :
+    if len(re.findall(f"{nguyen_am}(.+)", syllable)) !=0 :
+        result = re.findall(f"{nguyen_am}(.+)", syllable)
         phu_am_cuoi = result[0]
 
     ### Error thay đổi phụ âm đầu
@@ -68,7 +73,7 @@ for syllable in tqdm(vi_syllables_new):
 
 for syllable in tqdm(special_list):
 
-    if len(result:=re.findall(regex_nguyen_am_don, syllable)) > 1:
+    if len(re.findall(regex_nguyen_am_don, syllable)) > 1:
         phu_am_dau = syllable[0:2]
         remained = syllable[2:]
     else:
@@ -82,18 +87,22 @@ for syllable in tqdm(special_list):
     syllable_candidates['phu_am_cuoi'] = set()
     
 
-    if len(result:=re.findall(regex_nguyen_am_ba, remained)) != 0:
+    if len(re.findall(regex_nguyen_am_ba, remained)) != 0:
+        result = re.findall(regex_nguyen_am_ba, remained)
         nguyen_am = result[0]
-    elif len(result:=re.findall(regex_nguyen_am_doi, remained)) != 0:
+    elif len(re.findall(regex_nguyen_am_doi, remained)) != 0:
+        result = re.findall(regex_nguyen_am_doi, remained)
         nguyen_am = result[0]
-    elif len(result:=re.findall(regex_nguyen_am_don, remained)) != 0:
+    elif len(re.findall(regex_nguyen_am_don, remained)) != 0:
+        result = re.findall(regex_nguyen_am_don, remained)
         nguyen_am = result[0]
     else:
         nguyen_am, phu_am_cuoi = "", ""
         
     phu_am_cuoi = ""
 
-    if nguyen_am != "" and len(result:=re.findall(f"{nguyen_am}(.+)", remained)) !=0 :
+    if nguyen_am != "" and len(re.findall(f"{nguyen_am}(.+)", remained)) !=0 :
+        result = re.findall(f"{nguyen_am}(.+)", remained)
         phu_am_cuoi = result[0]
 
     ### Error thay đổi phụ âm đầu
@@ -219,7 +228,7 @@ def convert_to_non_telex(text):
     for candidate in candidates:
         replaced = typo[candidate][0]
             # Move accent to the end of text
-        if len(result:=re.findall(accent_pattern, replaced)) != 0:
+        if len(re.findall(accent_pattern, replaced)) != 0:
             word = re.sub(candidate, replaced[0:-1], word)
             word += replaced[-1]
         else:
@@ -242,6 +251,6 @@ for key in tqdm(confusion_set.keys()):
     lower_probs_list = confusion_set[key]['nguyen_am'].difference(high_probs_list)
     confusion_set[key]['nguyen_am'] = [high_probs_list, lower_probs_list]
 
-with open("../../dataset/noising_resources/confusion_set.json", "w") as outfile:
+with open("../noising_resources/confusion_set.json", "w+") as outfile:
     print(confusion_set, file = outfile)
 
