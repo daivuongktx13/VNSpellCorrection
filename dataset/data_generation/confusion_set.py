@@ -219,7 +219,7 @@ def make_accent_change_candidates(text):
         [candidates.append(text.replace(candidate, x)) for x in keyboard_neighbor[candidate]]
     return set(candidates)
 
-typo = json.load(open("../noising_resources/typo.json", "r"))
+typo = json.load(open("../noising_resources/typo.json", "r", encoding="utf-8"))
 typo_pattern = "(" + "|".join(typo.keys()) + "){1}"
 accent_pattern = "(s|f|r|x|j|1|2|3|4|5){1}"
 
@@ -252,6 +252,11 @@ for key in tqdm(confusion_set.keys()):
     lower_probs_list = confusion_set[key]['nguyen_am'].difference(high_probs_list)
     confusion_set[key]['nguyen_am'] = [high_probs_list, lower_probs_list]
 
-with open("../noising_resources/confusion_set.json", "w+") as outfile:
+for key in tqdm(confusion_set.keys()):
+    confusion_set[key]['nguyen_am'] = [list(confusion_set[key]['nguyen_am'][0]), list(confusion_set[key]['nguyen_am'][1])]
+    confusion_set[key]['phu_am_dau'] = list(confusion_set[key]['phu_am_dau'])
+    confusion_set[key]['phu_am_cuoi'] = list(confusion_set[key]['phu_am_cuoi'])
+
+with open("../noising_resources/confusion_set.json", "w+", encoding="utf-8") as outfile:
     print(confusion_set, file = outfile)
 
