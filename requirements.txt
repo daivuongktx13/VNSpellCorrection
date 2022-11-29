@@ -9,3 +9,4 @@ textdistance
 viet-text-tools
 rapidfuzz
 underthesea
+transformers
