@@ -7,6 +7,7 @@ from util import train_validation_split, check_violated_cases
 from utils.logger import get_logger
 import time
 from params import *
+import ray
 import os
 from dataset.noise import SynthesizeData
 import numpy as np
@@ -16,10 +17,13 @@ tokenizer = AutoTokenizer.from_pretrained("vinai/phobert-base", use_fast=False)
 
 class DatasetGenerator:
 
-    def __init__(self, data_root='../data', lang='vi', corpus='vi_wiki', file_name="corpus-small.txt"):
+    def __init__(self, id, lang, noiser, data_root="../data", corpus="vi_wiki"):
+
+        self.id = id
+        self.lang = lang
+        self.noiser = noiser
         self.data_root, self.lang, self.corpus = data_root, lang, corpus
         self.data_dir = f'{data_root}/{corpus}'
-        self.in_file_path = self.data_dir + '/' + file_name
         self.vocab = Vocab(self.lang)
 
     def open_files(self):
@@ -103,6 +107,7 @@ class DatasetGenerator:
             if len(words) < 10:
                 continue
             words = [normalize_diacritics(word) for word in words]
+            line = " ".join(words)
             self.vocab.update_subword_freq(words)
             subword_sents.append(line)
 
@@ -170,6 +175,14 @@ class DatasetGenerator:
                 self.train_file.write(line)
                 self.train_length_file.write(str(la) + "\n")
                 self.train_length_file.write(str(lb) + "\n")     
+            else:
+                self.test_noise_file.write(normal_noise + '\n')
+                self.test_noise_file.write(split_merge_noise + '\n')
+                self.test_onehot_file.write(normal_onehot + '\n')
+                self.test_onehot_file.write(split_merge_onehot + '\n')
+                self.test_file.write(line)
+                self.test_length_file.write(str(la) + "\n")
+                self.test_length_file.write(str(lb) + "\n")   
 
             self.close_files() 
 
@@ -187,7 +200,7 @@ if __name__ == "__main__":
     parser.add_argument('--corpus', type=str, default="vi_wiki")
     parser.add_argument('--file', type=str, default='corpus-small.txt')
     args = parser.parse_args()
-    creater = DatasetGenerator(data_root=args.data_root, corpus=args.dataset, file_name=args.file)
+    creater = DatasetGenerator(data_root=args.data_root, corpus=args.corpus, file_name=args.file)
     start_time = time.time()
     creater.build_data()
     end_time = time.time()
