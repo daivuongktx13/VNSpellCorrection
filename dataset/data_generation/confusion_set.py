@@ -1,3 +1,4 @@
+# coding: utf8
 import re 
 from normalize import chuan_hoa_dau_tu_tieng_viet
 import numpy as np
@@ -5,7 +6,7 @@ from tqdm import tqdm
 import textdistance
 import json
 from copy import copy
-with open("common-vietnamese-syllables.txt", "r") as file:
+with open("common-vietnamese-syllables.txt", "r", encoding="utf-8") as file:
     vi_syllables = [line.strip("\n") for line in file.readlines()]
 
 vi_syllables_new = []
