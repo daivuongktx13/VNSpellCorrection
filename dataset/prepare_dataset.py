@@ -14,8 +14,8 @@ from utils.logger import get_logger
 from viet_text_tools import normalize_diacritics
 
 from transformers import AutoTokenizer
-PHOBERT_MAX_SEQ_LEN = 256
-tokenizer = AutoTokenizer.from_pretrained("vinai/phobert-base", use_fast=False)
+CHAR_TRANSFORMER_MAX_SEQ_LEN = 768
+tokenizer = AutoTokenizer.from_pretrained("vinai/bartpho-word-base", use_fast=False)
 logger = get_logger("./log/prepare_data.log")
 
 @ray.remote
@@ -123,36 +123,19 @@ class PrepareActor(object):
                 line, percent_err=PERCENT_NOISE)
 
             split_merge_noise, split_merge_onehot = self.noiser.add_split_merge_noise(
-                line, percent_err=PERCENT_NOISE)
-            
-            tokens = tokenizer.tokenize(normal_noise)
-            la = len(tokens)
-            if len(tokens) > (PHOBERT_MAX_SEQ_LEN - 2):
-                logger.log(f"INFO: BERT noised tokens larger than BERT's max limit (NORMAL NOISE).")
-                logger.log(f"NOISED: {tokens}")
+                line, percent_err=PERCENT_NOISE, percent_normal_err=PERCENT_NOISE)
+
+            la = len(normal_noise)
+            lb = len(split_merge_noise)
+
+            if la > (CHAR_TRANSFORMER_MAX_SEQ_LEN - 2):
+                logger.log(f"INFO:  Noised longer than Transformer's max limit (NORMAL NOISE).")
                 logger.log(f"TEXT: {normal_noise}")
                 continue
-            
-            if check_violated_cases(tokens, [int(x) for x in normal_onehot.split(" ")]):
-                logger.log("INFO: BERT SUBWORD ERROR IN NORMAL NOISE!!!")
-                logger.log(f"text: {normal_noise}")
-                logger.log(f"noised tokens: {tokens}")
-                logger.log(f"onehot: {normal_onehot}")
-                continue
-                
-            tokens = tokenizer.tokenize(split_merge_noise)
-            lb = len(tokens)
 
-            if len(tokens) > (PHOBERT_MAX_SEQ_LEN - 2):
-                logger.log(f"INFO: BERT noised tokens larger than BERT's max limit (SPLIT MERGE NOISE).")
-                logger.log(f"NOISED: {tokens}")
-                continue
-            
-            if check_violated_cases(tokens, [int(x) for x in split_merge_onehot.split(" ")]):
-                logger.log("INFO: BERT SUBWORD ERROR IN SPLIT MERGE ERROR!!!")
-                logger.log(f"text: {split_merge_noise}")
-                logger.log(f"noised tokens: {tokens}")
-                logger.log(f"onehot: {split_merge_onehot}")
+            if lb > (CHAR_TRANSFORMER_MAX_SEQ_LEN - 2):
+                logger.log(f"INFO:  Noised longer than Transformer's max limit (SPLIT MERGE NOISE).")
+                logger.log(f"TEXT: {split_merge_noise}")
                 continue
 
             if for_train:
