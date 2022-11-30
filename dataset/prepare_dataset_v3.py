@@ -221,6 +221,8 @@ class PrepareDataset:
 
         noised_and_onehot_refs = [actor.gen_noised_and_onehot.remote(noiser) \
             for actor in self.actors]
+        
+        _ = ray.get(noised_and_onehot_refs)
 
         print(f"{dt.now()} PrepareDataset.build_noised_and_onehot.remote() COMPLETE !!!")
 
