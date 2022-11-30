@@ -160,7 +160,7 @@ class PrepareActor(object):
                 self.train_noise_file.write(split_merge_noise + '\n')
                 self.train_onehot_file.write(normal_onehot + '\n')
                 self.train_onehot_file.write(split_merge_onehot + '\n')
-                self.train_file.write(line)
+                self.train_file.write(line + "\n")
                 self.train_length_file.write(str(la) + "\n")
                 self.train_length_file.write(str(lb) + "\n")   
             else:
@@ -168,7 +168,7 @@ class PrepareActor(object):
                 self.test_noise_file.write(split_merge_noise + '\n')
                 self.test_onehot_file.write(normal_onehot + '\n')
                 self.test_onehot_file.write(split_merge_onehot + '\n')
-                self.test_file.write(line)
+                self.test_file.write(line + "\n")
                 self.test_length_file.write(str(la) + "\n")
                 self.test_length_file.write(str(lb) + "\n")   
 
