@@ -8,10 +8,10 @@ import re
 import time
 from datetime import datetime as dt
 sys.path.append("..")
+import numpy as np
 from params import PERCENT_NOISE, NUM_CPUS, NUM_PROCESSES
 from utils.logger import get_logger
 from viet_text_tools import normalize_diacritics
-
 
 from transformers import AutoTokenizer
 PHOBERT_MAX_SEQ_LEN = 256
@@ -20,18 +20,53 @@ logger = get_logger("./log/prepare_data.log")
 
 @ray.remote
 class PrepareActor(object):
-    def __init__(self, id, lang) -> None:
+    def __init__(self, id, lang, data_root='../data', corpus="binhbq") -> None:
+        self.data_root, self.lang, self.corpus = data_root, lang, corpus
         self.id = id
-        self.lang = lang
-        self.noiser = None
-        self.train_list = None
-        self.test_list = None
-        self.vocab = None
+        self.data_dir = f'{data_root}/{corpus}'
+
+    def open_files(self):
+        self.train_noise_file_name = f'{self.corpus}.train.noise'  + str(self.id)
+        self.train_file_name =  f'{self.corpus}.train'  + str(self.id)
+        self.train_onehot_file_name = f'{self.corpus}.onehot.train'  + str(self.id)
+        self.train_length_file_name = f'{self.corpus}.length.train' + str(self.id)
+        self.train_file_path = self.data_dir + '/' + self.train_file_name
+        self.train_noise_file_path = self.data_dir + '/' + self.train_noise_file_name
+        self.train_onehot_file_path = self.data_dir + '/' + self.train_onehot_file_name
+        self.train_length_file_path = self.data_dir + '/' + self.train_length_file_name
+        self.train_file = open(self.train_file_path, 'w', encoding='utf-8')
+        self.train_noise_file = open(self.train_noise_file_path, 'w', encoding='utf-8')
+        self.train_onehot_file = open(self.train_onehot_file_path, 'w', encoding='utf-8')
+        self.train_length_file = open(self.train_length_file_path, 'w', encoding='utf-8')
+
+        self.test_file_name =  f'{self.corpus}.test'  + str(self.id)
+        self.test_noise_file_name =  f'{self.corpus}.test.noise'  + str(self.id)
+        self.test_onehot_file_name = f'{self.corpus}.onehot.test'  + str(self.id)
+        self.test_length_file_name = f'{self.corpus}.length.test'  + str(self.id)
+        self.test_file_path = self.data_dir + '/' + self.test_file_name
+        self.test_noise_file_path = self.data_dir + '/' + self.test_noise_file_name
+        self.test_onehot_file_path = self.data_dir + '/' + self.test_onehot_file_name
+        self.test_length_file_path = self.data_dir + '/' + self.test_length_file_name
+        self.test_file = open(self.test_file_path, 'w', encoding='utf-8')
+        self.test_noise_file = open(self.test_noise_file_path, 'w', encoding='utf-8')
+        self.test_onehot_file = open(self.test_onehot_file_path, 'w', encoding='utf-8')
+        self.test_length_file = open(self.test_length_file_path, 'w', encoding='utf-8')
+
+    def close_files(self):
+        if self.train_noise_file:
+            self.train_noise_file.close()
+        if self.test_noise_file:
+            self.test_noise_file.close()
+        if self.train_onehot_file:
+            self.train_onehot_file.close()
+        if self.test_onehot_file:
+            self.test_onehot_file.close()
+
 
     def prepare_subword_sents_and_vocab(self, lines: ray.data.Dataset):
 
         vocab = Vocab(self.lang)
-        subword_sents = []
+        self.subword_sents = []
         
         print(f"{dt.now()} PrepareActor[{self.id}].prepare_sublist_and_vocab() BEGIN...")
 
@@ -47,39 +82,43 @@ class PrepareActor(object):
                         continue
                     words = [normalize_diacritics(word) for word in words]
                     vocab.update_subword_freq(words)
-                    subword_sents.append(splited_line)
+                    splited_line = " ".join(words)
+                    self.subword_sents.append(splited_line)
                 continue
             ###
             if len(words) < 10:
                 continue
             words = [normalize_diacritics(word) for word in words]
+            line = " ".join(words)
             vocab.update_subword_freq(words)
-            subword_sents.append(line)
+            self.subword_sents.append(line)
 
-        
         print(f"{dt.now()} PrepareActor[{self.id}].prepare_sublist_and_vocab() COMPLETED...")
-
-        train_list, test_list \
-            = train_validation_split(subword_sents, 0.9, seed=11690)
         
-        return train_list, test_list, vocab
+        return vocab
 
 
-    def gen_noised_and_onehot(self, lines: ray.data.Dataset, vocab: Vocab):
+    def gen_noised_and_onehot(self, noiser:SynthesizeData = None):
         print(f"{dt.now()} PrepareActor[{self.id}].gen_training_data() BEGIN...")
-
+        self.open_files()
         logger = get_logger(f"log/prepare_data_worker{self.id}.log")
+        assert noiser != None
 
-        if self.vocab == None:
-            self.vocab = vocab
-            self.noiser = SynthesizeData(vocab)
+        self.noiser = noiser
+        np.random.seed(2001)
+        np.random.shuffle(self.subword_sents)
+        
+        train_examples = 0
+        max_train_examples = int(0.9 * len(self.subword_sents))
 
-        normal_list = []
-        noised_list = []
-        onehot_list = []
-        length_list = []
+        for line in self.subword_sents:
+            train_examples += 1
 
-        for line in lines.iter_rows():
+            if train_examples < max_train_examples:
+                for_train = True
+            else:
+                for_train = False
+
             normal_noise, normal_onehot = self.noiser.add_normal_noise(
                 line, percent_err=PERCENT_NOISE)
 
@@ -116,79 +155,48 @@ class PrepareActor(object):
                 logger.log(f"onehot: {split_merge_onehot}")
                 continue
 
-
-            ## Should perform check_violated_cases in tokenizer here
-            normal_list.append(line)
-            noised_list.extend([normal_noise, split_merge_noise])
-            onehot_list.extend([normal_onehot, split_merge_onehot])
-            length_list.extend([la, lb])
+            if for_train:
+                self.train_noise_file.write(normal_noise + '\n')
+                self.train_noise_file.write(split_merge_noise + '\n')
+                self.train_onehot_file.write(normal_onehot + '\n')
+                self.train_onehot_file.write(split_merge_onehot + '\n')
+                self.train_file.write(line + "\n")
+                self.train_length_file.write(str(la) + "\n")
+                self.train_length_file.write(str(lb) + "\n")   
+            else:
+                self.test_noise_file.write(normal_noise + '\n')
+                self.test_noise_file.write(split_merge_noise + '\n')
+                self.test_onehot_file.write(normal_onehot + '\n')
+                self.test_onehot_file.write(split_merge_onehot + '\n')
+                self.test_file.write(line + "\n")
+                self.test_length_file.write(str(la) + "\n")
+                self.test_length_file.write(str(lb) + "\n")   
 
         print(f"{dt.now()} PrepareActor[{self.id}].gen_training_data() COMPLETED...")
+        self.close_files()
 
-        return noised_list, onehot_list, normal_list, length_list
 
 class PrepareDataset:
 
-    def __init__(self, data_root='../data', lang='vi', corpus='vi_wiki'):
+    def __init__(self, data_root='../data', lang='vi', corpus='binhvq'):
         self.data_root, self.lang, self.corpus = data_root, lang, corpus
         self.data_dir = f'{data_root}/{corpus}'
 
         self.vocab = Vocab(self.lang)
         
         # Number of CPUS
-        self.MAX_CPUS = 8
+        self.MAX_CPUS = 12
         self.NUM_CPUS = NUM_CPUS if NUM_CPUS < self.MAX_CPUS else self.MAX_CPUS
 
         ray.init(num_cpus=NUM_CPUS)
 
         print(f"{dt.now()} PrepareDataset: Initiating {NUM_PROCESSES} PrepareActor")
-        self.actors = [PrepareActor.remote(i, lang) for i in range(NUM_PROCESSES)]
+        self.actors = [PrepareActor.remote(i, lang, self.data_root, self.corpus) for i in range(NUM_PROCESSES)]
 
-    def open_files(self, test=False):
-        self.train_noise_file_name = f'{self.corpus}.train.noise'
-        self.train_file_name =  f'{self.corpus}.train'
-        self.train_onehot_file_name = f'{self.corpus}.onehot.train'
-        self.train_length_file_name = f'{self.corpus}.length.train'
-        self.train_file_path = self.data_dir + '/' + self.train_file_name
-        self.train_noise_file_path = self.data_dir + '/' + self.train_noise_file_name
-        self.train_onehot_file_path = self.data_dir + '/' + self.train_onehot_file_name
-        self.train_length_file_path = self.data_dir + '/' + self.train_length_file_name
-        self.train_file = open(self.train_file_path, 'w', encoding='utf-8')
-        self.train_noise_file = open(self.train_noise_file_path, 'w', encoding='utf-8')
-        self.train_onehot_file = open(self.train_onehot_file_path, 'w', encoding='utf-8')
-        self.train_length_file = open(self.train_length_file_path, 'w', encoding='utf-8')
-
-        self.test_file_name =  f'{self.corpus}.test'
-        self.test_noise_file_name =  f'{self.corpus}.test.noise'
-        self.test_onehot_file_name = f'{self.corpus}.onehot.test'
-        self.test_length_file_name = f'{self.corpus}.length.test'
-        self.test_file_path = self.data_dir + '/' + self.test_file_name
-        self.test_noise_file_path = self.data_dir + '/' + self.test_noise_file_name
-        self.test_onehot_file_path = self.data_dir + '/' + self.test_onehot_file_name
-        self.test_length_file_path = self.data_dir + '/' + self.test_length_file_name
-        self.test_file = open(self.test_file_path, 'w', encoding='utf-8')
-        self.test_noise_file = open(self.test_noise_file_path, 'w', encoding='utf-8')
-        self.test_onehot_file = open(self.test_onehot_file_path, 'w', encoding='utf-8')
-        self.test_length_file = open(self.test_length_file_path, 'w', encoding='utf-8')
-
-        self.vocab_pickle_name = f'{self.corpus}.vocab.test.pkl' if test else f'{self.corpus}.vocab.pkl'
+        self.vocab_pickle_name = f'{self.corpus}.vocab.pkl'
         self.vocab_pickle_path = self.data_dir + '/' + self.vocab_pickle_name
-        self.vocab_dict_name = f'{self.corpus}.dict.test.txt' if test else f'{self.corpus}.dict.txt'
-        self.vocab_dict_path = self.data_dir + '/' + self.vocab_dict_name
-
-    def close_files(self):
-        if self.train_file:
-            self.train_file.close()
-        if self.test_file:
-            self.test_file.close()
-        if self.train_noise_file:
-            self.train_noise_file.close()
-        if self.test_noise_file:
-            self.test_noise_file.close()
-        if self.train_onehot_file:
-            self.train_onehot_file.close()
-        if self.test_onehot_file:
-            self.test_onehot_file.close()
+        self.vocab_dict_name = f'{self.corpus}.dict.txt'
+        self.vocab_dict_path = self.data_dir + '/' + self.vocab_dict_name     
 
     def build_vocab_and_subwords(self, ray_ds: ray.data.Dataset):
 
@@ -199,75 +207,31 @@ class PrepareDataset:
         subword_and_vocab_refs = [actor.prepare_subword_sents_and_vocab.remote(
             shard) for actor, shard in zip(self.actors, shards)]
         subwords_and_vocabs = ray.get(subword_and_vocab_refs)
-        # Return results is tuple of train, test, vocab corresponding to 0, 1, 2
+        # Return results is vocab
 
         for i in range(NUM_PROCESSES):
-            self.vocab.merge_sub_vocabs(subwords_and_vocabs[i][2]) 
+            self.vocab.merge_sub_vocabs(subwords_and_vocabs[i]) 
             
-            for sent in subwords_and_vocabs[i][0]:
-                self.train_file.write(sent + '\n')
 
-            for sent in subwords_and_vocabs[i][1]:
-                self.test_file.write(sent + '\n')
-
-    def build_noised_and_onehot(self, ray_ds: ray.data.Dataset, train=True):
+    def build_noised_and_onehot(self):
 
         print(f"{dt.now()} PrepareDataset.build_noised_and_onehot.remote() BEGIN...")
 
-        shards = ray_ds.split(n = NUM_PROCESSES)
+        noiser = SynthesizeData(self.vocab)
 
-        noised_and_onehot_refs = [actor.gen_noised_and_onehot.remote(shard, self.vocab) \
-            for actor, shard in zip(self.actors, shards)]
-
-        noised_and_onehot = ray.get(noised_and_onehot_refs)
+        noised_and_onehot_refs = [actor.gen_noised_and_onehot.remote(noiser) \
+            for actor in self.actors]
+        
+        _ = ray.get(noised_and_onehot_refs)
 
         print(f"{dt.now()} PrepareDataset.build_noised_and_onehot.remote() COMPLETE !!!")
 
         print(f"{dt.now()} PrepareDataset.build_noised_and_onehot(): Writing to noised and onehot files!!!")
 
-        if train:
-            self.train_file.truncate()
-        else:
-            self.test_file.truncate()
 
-        for i in range(len(noised_and_onehot)):
-
-            print(f"{dt.now()} PrepareDataset.prepare_data(): training_data[{i}] Writing to files!!! BEGIN... !!!")
-
-            for sent in noised_and_onehot[i][0]:
-                if train:
-                    self.train_noise_file.write(sent + '\n')
-                else:
-                    self.test_noise_file.write(sent + '\n')
-
-            for sent in noised_and_onehot[i][1]:
-                if train:
-                    self.train_onehot_file.write(sent + '\n')
-                else:
-                    self.test_onehot_file.write(sent + '\n')
-
-            for sent in noised_and_onehot[i][2]:
-                if train:
-                    self.train_file.write(sent)
-                else:
-                    self.test_file.write(sent)
-            
-            for sent in noised_and_onehot[i][3]:
-                if train:
-                    self.train_length_file.write(str(sent) + "\n")
-                else:
-                    self.test_length_file.write(str(sent) + "\n")
-
-            print(f"{dt.now()} PrepareDataset.prepare_data(): training_data[{i}] Writing to files!!! COMPLETE !!!")
-
-        del noised_and_onehot
-        del noised_and_onehot_refs
-
-    def prepare_data(self, in_file_name='vi_wiki.data.txt', test=False):
+    def prepare_data(self, in_file_name='vi_wiki.data.txt'):
 
         print(f"{dt.now()} PrepareDataset.prepare_data(): open_files()")
-
-        self.open_files(test=test)
 
         self.in_file_path = self.data_dir + '/' + in_file_name
 
@@ -283,42 +247,15 @@ class PrepareDataset:
         
         ray_ds = ray.data.from_items(lines)
         del lines
-        self.build_vocab_and_subwords(ray_ds)
-
-        
         print(f"{dt.now()} PrepareDataset.prepare_data(): Building Vocabulary...")
+        self.build_vocab_and_subwords(ray_ds)
         self.vocab.build_vocab(topk=100000)
         print(f"{dt.now()} PrepareDataset.prepare_data(): Writing Vocabulary to text file...")
         self.vocab.save_dict_text(self.vocab_dict_path)
         print(f"{dt.now()} PrepareDataset.prepare_data(): Writing Vocabulary to pickle file...")
         self.vocab.save_vocab_dict(self.vocab_pickle_path)
-
-        self.train_file.close()
-        
         print(f"{dt.now()} PrepareDataset.prepare_data(): Gen train noised and onehot...")
-        self.train_file = open(self.train_file_path, 'r', encoding = "utf-8")
-        lines = self.train_file.readlines()
-        self.train_file.close()
-
-        self.train_file = open(self.train_file_path, 'w+', encoding = 'utf-8')
-        ray_ds = ray.data.from_items(lines)
-        del lines
-        self.build_noised_and_onehot(ray_ds)
-
-        self.test_file.close()
-        print(f"{dt.now()} PrepareDataset.prepare_data(): Gen test noised and onehot...")
-        self.test_file = open(self.test_file_path, 'r', encoding = "utf-8")
-        lines = self.test_file.readlines()
-        self.test_file.close()
-
-        self.test_file = open(self.test_file_path, 'w+', encoding = "utf-8")
-        ray_ds = ray.data.from_items(lines)
-        del lines
-        self.build_noised_and_onehot(ray_ds, train = False)
-
-
-        print(f"{dt.now()} PrepareDataset.prepare_data(): close_file()")
-        self.close_files()
+        self.build_noised_and_onehot()
         print(f"{dt.now()} PrepareDataset - Complete preparing dataset!!!")
 
 
@@ -332,11 +269,11 @@ if __name__ == "__main__":
     '''
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--file', type=str, default='corpus-small.txt')
-    parser.add_argument('--dataset', type=str, default='vi_wiki')
-    parser.add_argument('--test', type=bool, default=False)
+    parser.add_argument('--corpus', type=str, default='binhvq')
+    parser.add_argument('--data_root', type=str, default="../data")
     args = parser.parse_args()
-    creater = PrepareDataset(corpus=args.dataset)
+    creater = PrepareDataset(data_root = args.data_root, corpus=args.corpus)
     start_time = time.time()
-    creater.prepare_data(args.file, args.test)
+    creater.prepare_data(args.file)
     end_time = time.time()
     print(f"Time consumed for generate data: {end_time - start_time}")
