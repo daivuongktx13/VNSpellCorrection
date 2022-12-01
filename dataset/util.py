@@ -28,7 +28,7 @@ def load_vsec_dataset(base_path, corr_file, incorr_file):
     print(f"loaded tuples of (incorr, corr) examples from {base_path}")
     return data
 
-def load_dataset(base_path, corr_file, incorr_file, length_file = None):
+def load_dataset(base_path, corr_file, length_file):
     # load files
     if base_path:
         assert os.path.exists(base_path) == True
@@ -41,20 +41,13 @@ def load_dataset(base_path, corr_file, incorr_file, length_file = None):
             data.append([line.strip()])
     opfile2.close()
 
-    opfile1 = open(os.path.join(base_path, incorr_file), "r", encoding="utf-8")
-    for i, line in tqdm(enumerate(opfile1)):
-        if line.strip() != "":
-            data[i].append(line.strip())
-    opfile1.close()
-
-    length_data = []
     opfile4 = open(os.path.join(base_path, length_file), "r", encoding="utf-8")
     for i, line in tqdm(enumerate(opfile4)):
         if line.strip() != "":
             data[i].append(int(line))
     opfile4.close()
 
-    print(f"loaded tuples of (incorr, corr, length) examples from {base_path}")
+    print(f"loaded tuples of (corr, length) examples from {base_path}")
     return data
 
 def train_validation_split(data, train_ratio, seed):

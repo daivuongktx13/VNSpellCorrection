@@ -1,11 +1,13 @@
 
 from abc import abstractmethod
 from models.tokenizer import TokenAligner
+from dataset.noise import SynthesizeData
 
 class PTCollator():
 
     def __init__(self, tokenAligner: TokenAligner):
         self.tokenAligner = tokenAligner
+        self.noiser = SynthesizeData(tokenAligner.vocab)
 
     def collate(self, dataloader_batch, type = "train") -> dict:
         if type == "train":
@@ -35,10 +37,13 @@ class DataCollatorForCharacterTransformer(PTCollator):
         super().__init__(tokenAligner)
 
     def collate_train(self, dataloader_batch):
-        noised, labels = [], []
+        labels = []
+        noised = []
         for sample in dataloader_batch:
-            noised.append(sample[0])
-            labels.append(sample[1])
+            label = sample[0]
+            noise = self.noiser.add_normal_noise(label)
+            labels.append(label)
+            noised.append(noise)
 
         batch_srcs, batch_tgts, batch_lengths = self.tokenAligner.tokenize_for_transformer_with_tokenization(noised, labels)
         data = dict()

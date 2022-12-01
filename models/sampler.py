@@ -47,17 +47,18 @@ class BucketBatchSampler(Sampler):
         self.data = data
         self.shuffle = shuffle
         print("Initializing Bucket Batch Sampler From Scratch")
-        self.data.dataset = sorted(self.data.dataset, key = lambda x: x[2])
+        self.data.dataset = sorted(self.data.dataset, key = lambda x: x[1])
         token_counts = 0
         indies_lists = []
         self.seq = []
+        
         for index, values in tqdm(enumerate(self.data.dataset)):
             if token_counts >= MAXIMUM_TOKENS_PER_BATCH:
                 self.seq.append(indies_lists)
                 indies_lists = []
                 token_counts = 0
             indies_lists.append(index)
-            token_counts += values[2]
+            token_counts += values[1]
         if len(indies_lists) != 0 and token_counts != 0:
             self.seq.append(indies_lists)
 
@@ -91,7 +92,7 @@ class BucketBatchSampler(Sampler):
                 indies_lists = []
                 token_counts = 0
             indies_lists.append(index)
-            token_counts += values[2]
+            token_counts += values[1]
 
         if len(indies_lists) != 0 and token_counts != 0:
             self.seq.append(indies_lists)
