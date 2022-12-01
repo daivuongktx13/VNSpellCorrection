@@ -1,4 +1,3 @@
-from util import train_validation_split, check_violated_cases
 from vocab import Vocab
 from noise import SynthesizeData
 import os
