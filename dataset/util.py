@@ -32,32 +32,27 @@ def load_dataset(base_path, corr_file, incorr_file, length_file = None):
     # load files
     if base_path:
         assert os.path.exists(base_path) == True
-    incorr_data = []
-    opfile1 = open(os.path.join(base_path, incorr_file), "r", encoding="utf-8")
-    for line in tqdm(opfile1):
-        if line.strip() != "":
-            incorr_data.append(line.strip())
-    opfile1.close()
-    corr_data = []
+    
+    data = []
     opfile2 = open(os.path.join(base_path, corr_file), "r", encoding="utf-8")
     for line in tqdm(opfile2):
         if line.strip() != "":
-            corr_data.append(line.strip())
-            corr_data.append(line.strip())
+            data.append([line.strip()])
+            data.append([line.strip()])
     opfile2.close()
+
+    opfile1 = open(os.path.join(base_path, incorr_file), "r", encoding="utf-8")
+    for i, line in tqdm(enumerate(opfile1)):
+        if line.strip() != "":
+            data[i].append(line.strip())
+    opfile1.close()
 
     length_data = []
     opfile4 = open(os.path.join(base_path, length_file), "r", encoding="utf-8")
-    for line in tqdm(opfile4):
+    for i, line in tqdm(enumerate(opfile4)):
         if line.strip() != "":
-            length_data.append(int(line))
+            data[i].append(int(line))
     opfile4.close()
-
-    assert len(incorr_data) == len(corr_data) == len(length_data)
- 
-    data = []
-    for x, y, z in zip(incorr_data, corr_data, length_data):
-        data.append((x, y, z))
 
     print(f"loaded tuples of (incorr, corr, length) examples from {base_path}")
     return data
