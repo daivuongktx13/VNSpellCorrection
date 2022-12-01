@@ -61,6 +61,16 @@ class PrepareActor(object):
             self.train_onehot_file.close()
         if self.test_onehot_file:
             self.test_onehot_file.close()
+        if self.test_length_file:
+            self.test_length_file.close()
+        if self.train_length_file:
+            self.train_length_file.close()
+        if self.test_file:
+            self.test_file.close()
+        if self.train_file:
+            self.train_file.close()
+        
+            
 
 
     def prepare_subword_sents_and_vocab(self, lines: ray.data.Dataset):
@@ -118,6 +128,9 @@ class PrepareActor(object):
                 for_train = True
             else:
                 for_train = False
+
+            if len(line) > (CHAR_TRANSFORMER_MAX_SEQ_LEN - 2):
+                continue
 
             normal_noise, normal_onehot = self.noiser.add_normal_noise(
                 line, percent_err=PERCENT_NOISE)
