@@ -40,15 +40,13 @@ if __name__ == "__main__":
 
     correct_file = f'{args.test_dataset}.test'
     incorrect_file = f'{args.test_dataset}.test.noise'
-    test_onehot_file = f'{args.test_dataset}.onehot.test'
     length_file = f'{args.dataset}.length.test'
 
     if args.test_dataset != "vsec":
         test_data = load_dataset(base_path=dataset_path, corr_file=correct_file, incorr_file=incorrect_file,
-                             onehot_file=test_onehot_file, length_file=length_file)
+                              length_file=length_file)
     else:
-        test_data = load_vsec_dataset(base_path=dataset_path, corr_file=correct_file, incorr_file=incorrect_file,
-                             onehot_file=test_onehot_file)
+        test_data = load_vsec_dataset(base_path=dataset_path, corr_file=correct_file, incorr_file=incorrect_file)
 
     length_of_data = len(test_data)
     test_data = test_data[0 : int(args.fraction * length_of_data) ]

@@ -15,8 +15,8 @@ from datetime import datetime as dt
 from torch.utils.data import DataLoader
 from params import *
 from utils.logger import get_logger
-from model import ModelWrapper
-from sampler import RandomBatchSampler, BucketBatchSampler
+from models.model import ModelWrapper
+from models.sampler import RandomBatchSampler, BucketBatchSampler
 from utils.metrics import get_metric_for_tfm
 from accelerate import Accelerator
 
@@ -166,11 +166,10 @@ class Trainer():
                         info = 'Saving weights to disk......'
                         self.logger.log(info)
                         self.save_weights(self.checkpoint_dir, epoch_id, self.best_F1)
-                        if not self.test:
-                            info = 'Saving checkpoint to disk......'
-                            self.logger.log(info)
-                            self.save_checkpoint(
-                                self.checkpoint_dir, epoch_id, self.best_F1)
+                        info = 'Saving checkpoint to disk......'
+                        self.logger.log(info)
+                        self.save_checkpoint(
+                            self.checkpoint_dir, epoch_id, self.best_F1)
                         patience = 0
                     else:
                         patience += 1
@@ -201,11 +200,10 @@ class Trainer():
                 info = 'Saving weights to disk......'
                 self.logger.log(info)
                 self.save_weights(self.checkpoint_dir, epoch_id, self.best_F1)
-                if not self.test:
-                    info = 'Saving checkpoint to disk......'
-                    self.logger.log(info)
-                    self.save_checkpoint(
-                        self.checkpoint_dir, epoch_id, self.best_F1)
+                info = 'Saving checkpoint to disk......'
+                self.logger.log(info)
+                self.save_checkpoint(
+                    self.checkpoint_dir, epoch_id, self.best_F1)
                 patience = 0
             else:
                 patience += 1
@@ -283,11 +281,8 @@ class Trainer():
     def load_checkpoint(self, checkpoint_dir, dataset_name, start_epoch=0):
         self.checkpoint_dir = checkpoint_dir
         self.dataset_name = dataset_name
-        if self.test:
-            checkpoint_path = checkpoint_dir + \
-                f'/{dataset_name}.model.test.epoch_{start_epoch - 1}.pth'
-        else:
-            checkpoint_path = checkpoint_dir + \
+        
+        checkpoint_path = checkpoint_dir + \
                 f'/{dataset_name}.model.epoch_{start_epoch - 1}.pth'
 
         if start_epoch > 0 and os.path.exists(checkpoint_path):
@@ -320,12 +315,8 @@ class Trainer():
             self.best_F1 = checkpoint['best_F1']
 
     def save_checkpoint(self, checkpoint_dir, epoch, best_F1):
-        if self.test:
-            checkpoint_path = checkpoint_dir + \
-                f'/{self.dataset_name}.model.test.epoch_{epoch}.pth'
-        else:
-            checkpoint_path = checkpoint_dir + \
-                f'/{self.dataset_name}.model.epoch_{epoch}.pth'
+        checkpoint_path = checkpoint_dir + \
+            f'/{self.dataset_name}.model.epoch_{epoch}.pth'
         flatten_iterator_indies = list(chain.from_iterable(self.train_sampler.seq))
         remained_indies = flatten_iterator_indies[self.scratch_iter:None]
         self.logger.log(f"Traversed iter from beginning: {self.scratch_iter}")
@@ -349,11 +340,7 @@ class Trainer():
         torch.save(state, checkpoint_path)
 
     def save_weights(self, checkpoint_dir, epoch, best_F1):
-        if self.test:
-            weight_path = checkpoint_dir + \
-                f'/{self.dataset_name}.weights.test.pth'
-        else:
-            weight_path = checkpoint_dir + \
+        weight_path = checkpoint_dir + \
                 f'/{self.dataset_name}.weights.pth'
 
         if not os.path.exists(checkpoint_dir):

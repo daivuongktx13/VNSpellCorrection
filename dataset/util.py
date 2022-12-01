@@ -7,13 +7,13 @@ def load_vsec_dataset(base_path, corr_file, incorr_file):
     if base_path:
         assert os.path.exists(base_path) == True
     incorr_data = []
-    opfile1 = open(os.path.join(base_path, incorr_file), "r")
+    opfile1 = open(os.path.join(base_path, incorr_file), "r", encoding="utf-8")
     for line in opfile1:
         if line.strip() != "":
             incorr_data.append(line.strip())
     opfile1.close()
     corr_data = []
-    opfile2 = open(os.path.join(base_path, corr_file), "r")
+    opfile2 = open(os.path.join(base_path, corr_file), "r", encoding="utf-8")
     for line in opfile2:
         if line.strip() != "":
             corr_data.append(line.strip())
@@ -33,13 +33,13 @@ def load_dataset(base_path, corr_file, incorr_file, length_file = None):
     if base_path:
         assert os.path.exists(base_path) == True
     incorr_data = []
-    opfile1 = open(os.path.join(base_path, incorr_file), "r")
+    opfile1 = open(os.path.join(base_path, incorr_file), "r", encoding="utf-8")
     for line in tqdm(opfile1):
         if line.strip() != "":
             incorr_data.append(line.strip())
     opfile1.close()
     corr_data = []
-    opfile2 = open(os.path.join(base_path, corr_file), "r")
+    opfile2 = open(os.path.join(base_path, corr_file), "r", encoding="utf-8")
     for line in tqdm(opfile2):
         if line.strip() != "":
             corr_data.append(line.strip())
@@ -47,7 +47,7 @@ def load_dataset(base_path, corr_file, incorr_file, length_file = None):
     opfile2.close()
 
     length_data = []
-    opfile4 = open(os.path.join(base_path, length_file), "r")
+    opfile4 = open(os.path.join(base_path, length_file), "r", encoding="utf-8")
     for line in tqdm(opfile4):
         if line.strip() != "":
             length_data.append(int(line))

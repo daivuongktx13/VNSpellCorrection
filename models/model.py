@@ -1,5 +1,5 @@
-from transformer import TransformerWithTR
-from collator import *
+from models.transformer import TransformerWithTR
+from models.collator import *
 from transformers import AutoTokenizer
 import transformers
 from models.tokenizer import TokenAligner

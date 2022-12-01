@@ -27,20 +27,19 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='binhvq')
     args = parser.parse_args()
 
-    dataset_path = os.path.join(args.data_path, f'datasets/{args.dataset}')
+    dataset_path = os.path.join(args.data_path, f'{args.dataset}')
     vocab_path = os.path.join(dataset_path, f'{args.dataset}.vocab.pkl')
 
     vocab = Vocab()
     vocab.load_vocab_dict(vocab_path)
 
-    checkpoint_dir = os.path.join(args.data_path, f'checkpoints/{args.model}/{args.dataset}')
+    checkpoint_dir = os.path.join(args.data_path, f'checkpoints/{args.model}')
     incorrect_file = f'{args.dataset}.train.noise'
     correct_file = f'{args.dataset}.train'
-    onehot_file = f'{args.dataset}.onehot.train'
     length_file = f'{args.dataset}.length.train'
 
     data = load_dataset(base_path=dataset_path, corr_file=correct_file, incorr_file=incorrect_file,
-                        onehot_file=onehot_file, length_file = length_file)
+                        length_file = length_file)
 
     train_data, valid_data = train_validation_split(data, 0.99, seed=11690)
 
@@ -51,7 +50,7 @@ if __name__ == '__main__':
     train_dataset = SpellCorrectDataset(dataset=train_data)
     valid_dataset = SpellCorrectDataset(dataset=valid_data)
 
-    model_wrapper = ModelWrapper(args.model, vocab, args.framework)
+    model_wrapper = ModelWrapper(args.model, vocab)
 
     trainer = Trainer(model_wrapper, train_dataset, valid_dataset)
 
