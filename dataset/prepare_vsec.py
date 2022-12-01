@@ -194,14 +194,6 @@ for sentence in tqdm(data):
         number_violate_cases += 1
         continue
 
-    if check_violated_cases(tokens, [int(x) for x in onehot.split(" ")]):
-        print("INFO: BERT SUBWORD ERROR!!!")
-        print(f"text: {noised_text}")
-        print(f"noised tokens: {tokens}")
-        print(f"onehot: {onehot}")
-        number_violate_cases += 1
-        continue
-
     test_file.write(true_text + "\n")
     test_noise_file.write(noised_text + "\n")
     test_onehot_file.write(onehot + "\n")

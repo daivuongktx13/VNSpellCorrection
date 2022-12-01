@@ -1,6 +1,5 @@
 import os
 import numpy as np
-from viet_text_tools import normalize_diacritics
 
 def load_vsec_dataset(base_path, corr_file, incorr_file, onehot_file=None):
     # load files
@@ -98,17 +97,4 @@ def count_subword(noised_tokens, idx):
         idx -= 1
     return subword_cnt
 
-def check_violated_cases(noised_tokens, onehot):
-    onehot_idx = -1
-    for idx in range(len(noised_tokens)):
-        if not noised_tokens[idx].endswith("@@"):
-            onehot_idx += 1
-            try:
-                if onehot[onehot_idx] < 0:
-                    subword_cnt = count_subword(noised_tokens, idx)
-                    if subword_cnt < abs(onehot[onehot_idx]) + 1:
-                        return True
-            except:
-                return True
-    return False
 
