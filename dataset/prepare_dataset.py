@@ -38,6 +38,19 @@ class PrepareActor(object):
         self.train_onehot_file = open(self.train_onehot_file_path, 'w', encoding='utf-8')
         self.train_length_file = open(self.train_length_file_path, 'w', encoding='utf-8')
 
+        self.valid_file_name =  f'{self.corpus}.valid'  + str(self.id)
+        self.valid_noise_file_name =  f'{self.corpus}.valid.noise'  + str(self.id)
+        self.valid_onehot_file_name = f'{self.corpus}.onehot.valid'  + str(self.id)
+        self.valid_length_file_name = f'{self.corpus}.length.valid'  + str(self.id)
+        self.valid_file_path = self.data_dir + '/' + self.valid_file_name
+        self.valid_noise_file_path = self.data_dir + '/' + self.valid_noise_file_name
+        self.valid_onehot_file_path = self.data_dir + '/' + self.valid_onehot_file_name
+        self.valid_length_file_path = self.data_dir + '/' + self.valid_length_file_name
+        self.valid_file = open(self.valid_file_path, 'w', encoding='utf-8')
+        self.valid_noise_file = open(self.valid_noise_file_path, 'w', encoding='utf-8')
+        self.valid_onehot_file = open(self.valid_onehot_file_path, 'w', encoding='utf-8')
+        self.valid_length_file = open(self.valid_length_file_path, 'w', encoding='utf-8')
+        
         self.test_file_name =  f'{self.corpus}.test'  + str(self.id)
         self.test_noise_file_name =  f'{self.corpus}.test.noise'  + str(self.id)
         self.test_onehot_file_name = f'{self.corpus}.onehot.test'  + str(self.id)
@@ -54,21 +67,31 @@ class PrepareActor(object):
     def close_files(self):
         if self.train_noise_file:
             self.train_noise_file.close()
-        if self.test_noise_file:
-            self.test_noise_file.close()
         if self.train_onehot_file:
             self.train_onehot_file.close()
+        if self.train_length_file:
+            self.train_length_file.close()
+        if self.train_file:
+            self.train_file.close()
+
+        if self.test_noise_file:
+            self.test_noise_file.close()
         if self.test_onehot_file:
             self.test_onehot_file.close()
         if self.test_length_file:
             self.test_length_file.close()
-        if self.train_length_file:
-            self.train_length_file.close()
         if self.test_file:
             self.test_file.close()
-        if self.train_file:
-            self.train_file.close()
-        
+
+        if self.valid_noise_file:
+            self.valid_noise_file.close()
+        if self.valid_onehot_file:
+            self.valid_onehot_file.close()
+        if self.valid_length_file:
+            self.valid_length_file.close()
+        if self.valid_file:
+            self.valid_file.close()
+    
             
 
 
@@ -118,15 +141,20 @@ class PrepareActor(object):
         np.random.shuffle(self.subword_sents)
         
         train_examples = 0
-        max_train_examples = int(0.9 * len(self.subword_sents))
+        #### Train 0.89 Valid 0.01 Test 0.10
+        max_train_examples = int(0.89 * len(self.subword_sents))
+        max_valid_examples = int(0.90 * len(self.subword_sents))
 
         for line in self.subword_sents:
             train_examples += 1
 
             if train_examples < max_train_examples:
-                for_train = True
+                data_for = "train"
+            elif train_examples < max_valid_examples:
+                data_for = "valid"
             else:
-                for_train = False
+                data_for = "test"
+
 
             if len(line) > (CHAR_TRANSFORMER_MAX_SEQ_LEN - 2):
                 continue
@@ -150,7 +178,7 @@ class PrepareActor(object):
                 logger.log(f"TEXT: {split_merge_noise}")
                 continue
 
-            if for_train:
+            if data_for == "train":
                 self.train_noise_file.write(normal_noise + '\n')
                 self.train_noise_file.write(split_merge_noise + '\n')
                 self.train_onehot_file.write(normal_onehot + '\n')
@@ -158,7 +186,7 @@ class PrepareActor(object):
                 self.train_file.write(line + "\n")
                 self.train_length_file.write(str(la) + "\n")
                 self.train_length_file.write(str(lb) + "\n")   
-            else:
+            elif data_for == "test":
                 self.test_noise_file.write(normal_noise + '\n')
                 self.test_noise_file.write(split_merge_noise + '\n')
                 self.test_onehot_file.write(normal_onehot + '\n')
@@ -166,6 +194,14 @@ class PrepareActor(object):
                 self.test_file.write(line + "\n")
                 self.test_length_file.write(str(la) + "\n")
                 self.test_length_file.write(str(lb) + "\n")   
+            else:
+                self.valid_noise_file.write(normal_noise + '\n')
+                self.valid_noise_file.write(split_merge_noise + '\n')
+                self.valid_onehot_file.write(normal_onehot + '\n')
+                self.valid_onehot_file.write(split_merge_onehot + '\n')
+                self.valid_file.write(line + "\n")
+                self.valid_length_file.write(str(la) + "\n")
+                self.valid_length_file.write(str(lb) + "\n")   
 
         print(f"{dt.now()} PrepareActor[{self.id}].gen_training_data() COMPLETED...")
         self.close_files()

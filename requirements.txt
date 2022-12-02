@@ -10,3 +10,5 @@ viet-text-tools
 rapidfuzz
 underthesea
 transformers
+accelerate
+pickle5

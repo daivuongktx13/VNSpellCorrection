@@ -38,21 +38,22 @@ if __name__ == '__main__':
     correct_file = f'{args.dataset}.train'
     length_file = f'{args.dataset}.length.train'
 
-    data = load_dataset(base_path=dataset_path, corr_file=correct_file, incorr_file=incorrect_file,
-                        length_file = length_file)
+    valid_incorrect_file = f'{args.dataset}.valid.noise'
+    valid_correct_file = f'{args.dataset}.valid'
+    valid_length_file = f'{args.dataset}.length.valid'
 
-    train_data, valid_data = train_validation_split(data, 0.99, seed=11690)
+    valid_data = load_dataset(base_path=dataset_path, corr_file=valid_correct_file, incorr_file=valid_incorrect_file,
+                        length_file = valid_length_file)
 
     from dataset.autocorrect_dataset import SpellCorrectDataset
     from models.trainer import Trainer
     from models.model import ModelWrapper
 
-    train_dataset = SpellCorrectDataset(dataset=train_data)
     valid_dataset = SpellCorrectDataset(dataset=valid_data)
 
     model_wrapper = ModelWrapper(args.model, vocab)
 
-    trainer = Trainer(model_wrapper, train_dataset, valid_dataset)
+    trainer = Trainer(model_wrapper, dataset_path, args.dataset, valid_dataset)
 
     trainer.load_checkpoint(checkpoint_dir, args.dataset, args.start_epoch)
 
