@@ -34,7 +34,8 @@ class Trainer():
         self.length_file = f'{dataset_name}.length.train'
         train_dataset = load_epoch_dataset(data_path, self.correct_file, \
             self.incorrect_file, self.length_file, 1, EPOCHS)
-        self.train_dataset = SpellCorrectDataset(dataset=train_dataset)
+        train_dataset = SpellCorrectDataset(dataset=train_dataset)
+        self.train_dataset = train_dataset
         self.valid_dataset = valid_dataset
         
         if not BUCKET_SAMPLING:
