@@ -63,6 +63,7 @@ class Trainer():
         self.start_epoch = 1
         self.best_F1 = -1
         self.current_epoch = 1
+        self.progress_epoch = None
 
         self.max_epochs = EPOCHS
         self.learning_rate = MAX_LR
