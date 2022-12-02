@@ -360,7 +360,7 @@ class Trainer():
         self.logger.log(f"Traversed iter from beginning: {self.scratch_iter}")
         state = {
             'epoch': epoch,
-            'iter': self.iter, 'state_dict': self.model.state_dict(), 'scratch_iter': self.scratch_iterz,
+            'iter': self.iter, 'state_dict': self.model.state_dict(), 'scratch_iter': self.scratch_iter,
             'optimizer': self.optimizer.state_dict(),
             'scheduler': self.scheduler.state_dict(),
             'best_F1': best_F1,
