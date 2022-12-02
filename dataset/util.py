@@ -83,6 +83,7 @@ def load_epoch_dataset(base_path, corr_file, incorr_file, length_file, epoch: in
         if line.strip() != "":
             if traverse_count >= start_index and traverse_count < end_index :
                 data.append([line.strip()])
+                traverse_count += 1
             elif traverse_count >= end_index:
                 break
             else:
@@ -90,6 +91,7 @@ def load_epoch_dataset(base_path, corr_file, incorr_file, length_file, epoch: in
 
             if traverse_count >= start_index and traverse_count < end_index :
                 data.append([line.strip()])
+                traverse_count += 1
             elif traverse_count >= end_index:
                 break
             else:

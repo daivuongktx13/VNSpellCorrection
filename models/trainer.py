@@ -19,6 +19,7 @@ from models.model import ModelWrapper
 from models.sampler import RandomBatchSampler, BucketBatchSampler
 from utils.metrics import get_metric_for_tfm
 from accelerate import Accelerator
+from dataset.autocorrect_dataset import SpellCorrectDataset
 from dataset.util import load_epoch_dataset
 
 
@@ -33,7 +34,7 @@ class Trainer():
         self.length_file = f'{dataset_name}.length.train'
         train_dataset = load_epoch_dataset(data_path, self.correct_file, \
             self.incorrect_file, self.length_file, 1, EPOCHS)
-        self.train_dataset = train_dataset
+        self.train_dataset = SpellCorrectDataset(dataset=train_dataset)
         self.valid_dataset = valid_dataset
         
         if not BUCKET_SAMPLING:
@@ -330,9 +331,9 @@ class Trainer():
             self.progress_epoch = self.start_epoch
             self.scratch_iter = checkpoint['scratch_iter']
 
-            self.train_dataset = load_epoch_dataset(self.data_path, self.correct_file,\
+            train_dataset = load_epoch_dataset(self.data_path, self.correct_file,\
                  self.incorrect_file, self.length_file, self.start_epoch, EPOCHS)
-            
+            self.train_dataset = SpellCorrectDataset(dataset=train_dataset)
             if not BUCKET_SAMPLING:
                 assert checkpoint['strategy'] == "random_sampling"
                 self.train_sampler = RandomBatchSampler(self.train_dataset, TRAIN_BATCH_SIZE)
