@@ -27,9 +27,6 @@ class RandomBatchSampler(Sampler):
 
     def __len__(self):
         return len(self.seq)
-        
-    def reset_sampler(self):
-        self.seq = copy.deepcopy(self.default_seq)
     
     def load_checkpoints(self, iters = 0):
         self.seq = list(range(0, len(self.data)))
@@ -73,9 +70,6 @@ class BucketBatchSampler(Sampler):
 
     def __len__(self):
         return len(self.seq)
-        
-    def reset_sampler(self):
-        self.seq = copy.deepcopy(self.default_seq)
 
     def load_checkpoints(self, remained_indies):
         start = time.time()
