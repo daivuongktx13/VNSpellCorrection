@@ -52,11 +52,10 @@ class DataCollatorForCharacterTransformer(PTCollator):
         for sample in dataloader_batch:
             noised.append(sample[0])
             labels.append(sample[1])
-        batch_srcs, batch_tgts, batch_lengths = self.tokenAligner.tokenize_for_transformer_with_tokenization(noised, labels)
+
+        batch_srcs = self.tokenAligner.tokenize_for_transformer_with_tokenization(noised, None)
         data = dict()
         data['batch_src'] = batch_srcs
-        data['batch_tgt'] = batch_tgts
-        data['lengths'] = batch_lengths
         data['noised_texts'] = noised
         data['label_texts'] = labels
         return data

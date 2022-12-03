@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from datetime import datetime as dt
 from params import *
 from models.model import ModelWrapper
-from utils.metrics import get_metric_for_tfm, get_mned_metric_from_TruePredict, get_metric_from_TrueWrongPredictV2
+from utils.metrics import get_mned_metric_from_TruePredict, get_metric_from_TrueWrongPredictV2
 from utils.logger import get_logger
 from models.sampler import RandomBatchSampler, BucketBatchSampler
 from termcolor import colored
@@ -58,84 +58,13 @@ class Corrector:
 
         return correction
 
-    def step(self, batch, training = True, num_beams = 2):
-        if training == True:
-            outputs = self.model(batch['batch_src'], batch['batch_tgt'])
-        else:
-            outputs= self._get_transfomer_with_tr_generations(batch, num_beams)
-
-        batch_predictions = outputs['preds'] if training == True else outputs['predict_text']
-        batch_token_lens = batch['lengths']
-        batch_label_ids = batch['batch_tgt'].cpu().detach().numpy()
+    def step(self, batch, num_beams = 2):
+        outputs= self._get_transfomer_with_tr_generations(batch, num_beams)
+        batch_predictions = outputs['predict_text']
         batch_label_texts = batch['label_texts']
         batch_noised_texts = batch['noised_texts']
 
-        return batch_predictions, batch_token_lens, batch_label_ids, batch_noised_texts, batch_label_texts
-
-
-    def _evaluation_loop_teacher_forcing(self, data_loader):
-        num_wrong, num_correct = 0, 0
-        TP, FP, FN = 0, 0, 0
-        O_MNED = 0.0
-        MNED = 0.0
-        total_infer_time = 0.0
-
-        with torch.no_grad():
-            self.model.eval()
-
-            for step, batch in enumerate(data_loader):
-
-                batch_infer_start = time.time()
-
-                batch_predict_ids, batch_subword_lens, batch_label_ids,\
-                    batch_noised_texts, batch_label_texts = self.step(batch)
-
-                batch_infer_time = time.time() - batch_infer_start
-
-                batch_predicts_wo_padding = [predict[0:length + 1] for predict, length in zip(batch_predict_ids, batch_subword_lens) ]
-
-                predict_texts = self.model_wrapper.tokenAligner.tokenizer.batch_decode(batch_predicts_wo_padding, 
-                    skip_special_tokens=True, 
-                    clean_up_tokenization_spaces = False)
-            
-                
-                _TP, _FP, _FN = get_metric_from_TrueWrongPredictV2(batch_label_texts, batch_noised_texts, predict_texts)
-
-                _num_correct, _num_wrong = get_metric_for_tfm(batch_predict_ids, batch_label_ids, batch_subword_lens)
-
-                num_wrong += _num_wrong
-                num_correct += _num_correct
-                TP += _TP
-                FP += _FP
-                FN += _FN
-
-                _MNED = get_mned_metric_from_TruePredict(batch_label_texts, predict_texts)
-                MNED += _MNED
-
-                _O_MNED = get_mned_metric_from_TruePredict(batch_label_texts, batch_noised_texts)
-                O_MNED += _O_MNED
-
-                info = '{} - Evaluate - iter: {:08d}/{:08d} - correct: {} - wrong: {} - _TP: {} - _FP: {} - _FN: {} - _MNED: {:.5f} - _O_MNED: {:.5f} -  {} time: {:.2f}s'.format(
-                    dt.now(),
-                    step,
-                    self.test_iters,
-                    _num_correct,
-                    _num_wrong,
-                    _TP,
-                    _FP,
-                    _FN,
-                    _MNED,
-                    _O_MNED,
-                    self.device,
-                    batch_infer_time)
-
-
-                self.logger.log(info)
-
-                torch.cuda.empty_cache()
-                total_infer_time += time.time() - batch_infer_start
-
-        return total_infer_time, num_correct, num_wrong, TP, FP, FN, MNED / len(data_loader), O_MNED / len(data_loader)
+        return batch_predictions, batch_noised_texts, batch_label_texts
 
     def _evaluation_loop_autoregressive(self, data_loader, num_beams = 2):
         TP, FP, FN = 0, 0, 0
@@ -150,9 +79,8 @@ class Corrector:
 
                 batch_infer_start = time.time()
 
-                batch_predictions, batch_subword_lens, batch_label_ids,\
-                    batch_noised_texts, batch_label_texts = \
-                        self.step(batch, training = False, num_beams = num_beams)
+                batch_predictions, batch_noised_texts, batch_label_texts = \
+                        self.step(batch, num_beams = num_beams)
 
                 batch_infer_time = time.time() - batch_infer_start
 
@@ -186,14 +114,7 @@ class Corrector:
                 total_infer_time += time.time() - batch_infer_start
         return total_infer_time, TP, FP, FN, MNED / len(data_loader), O_MNED / len(data_loader)
         
-
-    """
-        evaluate with metrics
-        metrics:
-            - auto-regressive: metrics when using beam search for different length seq
-            - teacher-forcing: metrics when teacher forcing with decoder
-    """
-    def evaluate(self, dataset, metrics = "teacher-forcing", beams: int = None):
+    def evaluate(self, dataset, beams: int = None):
 
         def test_collate_wrapper(batch):
             return self.model_wrapper.collator.collate(batch, type = "test")
@@ -208,63 +129,30 @@ class Corrector:
             
         self.test_iters = len(data_loader)
 
-        assert metrics in ["teacher-forcing", "auto-regressive"]
-
-        if metrics == "teacher-forcing":
-            total_infer_time, num_correct, num_wrong, TP, FP, FN, MNED, O_MNED = self._evaluation_loop_teacher_forcing(data_loader)
-
-        if metrics == "auto-regressive":
-            assert beams != None
-            total_infer_time, TP, FP, FN, MNED, O_MNED = self._evaluation_loop_autoregressive(data_loader, num_beams = beams)
+        assert beams != None
+        total_infer_time, TP, FP, FN, MNED, O_MNED = self._evaluation_loop_autoregressive(data_loader, num_beams = beams)
             
 
         self.logger.log("Total inference time for this data is: {:4f} secs".format(total_infer_time))
         self.logger.log("###############################################")
 
-        assert metrics in ["teacher-forcing", "auto-regressive"], "Metrics should be teacher-forcing or auto-regressive"
+        info = f"Metrics for Auto-Regressive with Beam Search number {beams}"
+        self.logger.log(colored(info, "green"))
 
-        if metrics == "teacher-forcing":
-            info = "Metrics for Teacher-Forcing"
-            self.logger.log(colored(info, "green"))
-            info = f"Num_correct tokens: {num_correct}. Num_wrong tokens: {num_wrong}"
-            self.logger.log(info)
+        dc_TP = TP
+        dc_FP = FP
+        dc_FN = FN
 
-            info = f"Accuracy: {num_correct / (num_correct + num_wrong)}"
-            self.logger.log(info)
+        dc_precision = dc_TP / (dc_TP + dc_FP)
+        dc_recall = dc_TP / (dc_TP + dc_FN)
+        dc_F1 = 2. * dc_precision * dc_recall/ ((dc_precision + dc_recall) + 1e-8)
 
-            dc_TP = TP
-            dc_FP = FP
-            dc_FN = FN
+        self.logger.log(f"TP: {TP}. FP: {FP}. FN: {FN}")
 
-            dc_precision = dc_TP / (dc_TP + dc_FP)
-            dc_recall = dc_TP / (dc_TP + dc_FN)
-            dc_F1 = 2. * dc_precision * dc_recall/ ((dc_precision + dc_recall) + 1e-8)
-            self.logger.log(f"TP: {TP}. FP: {FP}. FN: {FN}")
-
-            self.logger.log(f"Precision: {dc_precision}")
-            self.logger.log(f"Recall: {dc_recall}")
-            self.logger.log(f"F1: {dc_F1}")
-            self.logger.log(f"MNED: {MNED}")
-            self.logger.log(f"O_MNED: {O_MNED}")
-
-        if metrics == "auto-regressive":
-            info = f"Metrics for Auto-Regressive with Beam Search number {beams}"
-            self.logger.log(colored(info, "green"))
-
-            dc_TP = TP
-            dc_FP = FP
-            dc_FN = FN
-
-            dc_precision = dc_TP / (dc_TP + dc_FP)
-            dc_recall = dc_TP / (dc_TP + dc_FN)
-            dc_F1 = 2. * dc_precision * dc_recall/ ((dc_precision + dc_recall) + 1e-8)
-
-            self.logger.log(f"TP: {TP}. FP: {FP}. FN: {FN}")
-
-            self.logger.log(f"Precision: {dc_precision}")
-            self.logger.log(f"Recall: {dc_recall}")
-            self.logger.log(f"F1: {dc_F1}")
-            self.logger.log(f"MNED: {MNED}")
-            self.logger.log(f"O_MNED: {O_MNED}")
+        self.logger.log(f"Precision: {dc_precision}")
+        self.logger.log(f"Recall: {dc_recall}")
+        self.logger.log(f"F1: {dc_F1}")
+        self.logger.log(f"MNED: {MNED}")
+        self.logger.log(f"O_MNED: {O_MNED}")
 
         return
