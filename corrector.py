@@ -29,7 +29,7 @@ if __name__ == "__main__":
     parser.add_argument('--text', type=str, default='Bình mnh ơi day ch ưa, café xáng vớitôi dược không?')
     args = parser.parse_args()
 
-    dataset_path = os.path.join(args.data_path, f'datasets/{args.test_dataset}')
+    dataset_path = os.path.join(args.data_path, f'{args.test_dataset}')
 
     weight_ext = 'pth'
 
