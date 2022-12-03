@@ -45,7 +45,7 @@ class TransformerWithTR(nn.Module):
     def inference(self, src_ids, num_beams = 2, tokenAligner: TokenAligner = None):
         assert tokenAligner != None
         src_ids = src_ids.to(DEVICE)
-        output = self.bart.generate(src_ids, num_beams=num_beams, max_new_tokens = 300)
+        output = self.bart.generate(src_ids, num_beams=num_beams, max_new_tokens = 256)
         predict_text = tokenAligner.tokenizer.batch_decode(output, 
             skip_special_tokens=True, 
             clean_up_tokenization_spaces = False)

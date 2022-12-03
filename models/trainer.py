@@ -278,7 +278,6 @@ class Trainer():
                 batch_label_ids = batch['batch_tgt'].cpu().detach().numpy()
                 
                 _num_correct, _num_wrong = get_metric_for_tfm(batch_predictions, batch_label_ids, batch_token_lens)
-                print(_num_correct, _num_wrong)
                 
                 num_correct += _num_correct
                 num_wrong += _num_wrong

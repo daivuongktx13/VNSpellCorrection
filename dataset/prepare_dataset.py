@@ -13,7 +13,7 @@ from utils.logger import get_logger
 from viet_text_tools import normalize_diacritics
 
 from transformers import AutoTokenizer
-CHAR_TRANSFORMER_MAX_SEQ_LEN = 768
+CHAR_TRANSFORMER_MAX_SEQ_LEN = 512
 tokenizer = AutoTokenizer.from_pretrained("vinai/bartpho-word-base", use_fast=False)
 logger = get_logger("./log/prepare_data.log")
 
@@ -106,11 +106,11 @@ class PrepareActor(object):
             line = line.strip("\n")
             words = line.split(" ")
             ###
-            if len(words) > 200:
+            if len(words) > 150:
                 splited_lines = re.split("[.;]+", line)
                 for splited_line in splited_lines:
                     words = splited_line.split(" ")
-                    if len(words) < 10 or len(words) > 200:
+                    if len(words) < 10 or len(words) > 150:
                         continue
                     words = [normalize_diacritics(word) for word in words]
                     vocab.update_subword_freq(words)
