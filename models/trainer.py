@@ -115,7 +115,7 @@ class Trainer():
         if training:
             self.model.train()
             start = time.time()
-            outputs = self.model(batch['batch_src'], batch['batch_tgt']) # outputs.logits , outputs.loss
+            outputs = self.model(batch['batch_src'], batch['batch_tgt'], batch['attn_masks']) # outputs.logits , outputs.loss
             self.total_fw_time += time.time() - start
             loss = outputs['loss']
             batch_loss = outputs['loss'].cpu().detach().numpy()

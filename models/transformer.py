@@ -13,13 +13,14 @@ class TransformerWithTR(nn.Module):
         self.pad_token_id = padding_index
 
 
-    def forward(self, src_ids, labels = None):
+    def forward(self, src_ids, attn_masks, labels = None):
         labels[labels == self.pad_token_id] = -100
         src_ids = src_ids.to(DEVICE)
         labels = labels.to(DEVICE)
+        attn_masks = attn_masks.to(DEVICE)
         out = dict()
 
-        output = self.bart(input_ids = src_ids,
+        output = self.bart(input_ids = src_ids, attention_mask = attn_masks,
             labels = labels)
         logits = output['logits']
         out['loss'] = output['loss']
