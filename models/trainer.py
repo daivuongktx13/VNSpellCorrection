@@ -96,8 +96,9 @@ class Trainer():
         self.logger.log(f"CHECKPOINT CYCLE: {self.checkpoint_cycle} ITER")
 
     def load_lazy_dataset(self, epoch):
-        self.train_dataset = load_epoch_dataset(self.data_path, self.correct_file,\
+        train_dataset = load_epoch_dataset(self.data_path, self.correct_file,\
                 self.incorrect_file, self.length_file, epoch, EPOCHS)
+        self.train_dataset = SpellCorrectDataset(dataset=train_dataset)
             
         if not BUCKET_SAMPLING:
             self.train_sampler = RandomBatchSampler(self.train_dataset, TRAIN_BATCH_SIZE)
@@ -147,11 +148,14 @@ class Trainer():
 
         for epoch_id in range(self.start_epoch, self.max_epochs):
             self.current_epoch = epoch_id
-            if self.progress_epoch and self.progress_epoch != epoch_id:
+            if self.progress_epoch and self.progress_epoch == epoch_id:
+                self.progress_epoch = None
+            elif self.start_epoch != 1:
                 self.load_lazy_dataset(epoch_id)
                 self.logger.log(f"Loaded lazy dataset {epoch_id} / {self.max_epochs}")
             else:
-                self.progress_epoch = None
+                pass
+
             self.logger.log(f"START OF EPOCH {epoch_id}")
             for step, batch in enumerate(self.train_data):
                 start = time.time()

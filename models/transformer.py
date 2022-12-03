@@ -40,6 +40,7 @@ class TransformerWithTR(nn.Module):
             char_vocab.append(key + "@@")
         tokenizer.add_tokens(char_vocab)
         self.bart.resize_token_embeddings(len(tokenizer.get_vocab()))
+        print("Resized token embeddings!")
         return
     
     def inference(self, src_ids, num_beams = 2, tokenAligner: TokenAligner = None):
