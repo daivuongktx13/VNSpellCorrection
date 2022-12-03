@@ -17,6 +17,7 @@ class TokenAligner():
     def _char_tokenize(self, text):
         characters = list(text)
         tokens = [ token + "@@" if i < len(characters) - 1 and characters[i + 1] != " " else token for i, token in enumerate(characters)]
+        tokens = [token for token in tokens if token not in [" @@", " "]]
         token_ids = self.tokenizer.encode(tokens, return_tensors = "pt").squeeze(0)
         return tokens, token_ids
     
