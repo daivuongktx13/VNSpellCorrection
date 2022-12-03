@@ -16,7 +16,7 @@ class ModelWrapper:
             self.bart = transformers.MBartForConditionalGeneration.from_pretrained("vinai/bartpho-word-base")
             self.model = TransformerWithTR(self.bart, self.tokenizer.pad_token_id)
             self.collator = DataCollatorForCharacterTransformer(self.tokenAligner)
-            # self.model.resize_token_embeddings(self.tokenAligner)
+            self.model.resize_token_embeddings(self.tokenAligner)
         else:
             raise(Exception(f"Model {model} isn't implemented!"))
         
