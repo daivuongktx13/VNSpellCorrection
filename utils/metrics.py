@@ -18,6 +18,7 @@ def get_mned_metric_from_TruePredict(batch_true_text, batch_predict_text):
 def get_metric_for_tfm(batch_predicts, batch_targets, batch_length):
     num_correct, num_wrong = 0, 0
     for predict, target, length in zip(batch_predicts, batch_targets, batch_length):
+        print(predict, target, length)
         predict = predict[1:-1]
         target = target[1:-1]
         predict = np.array(predict[0:length])
