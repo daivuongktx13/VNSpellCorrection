@@ -25,7 +25,6 @@ if __name__ == "__main__":
     parser.add_argument('--test_dataset', type=str, default='binhvq')
     parser.add_argument("--beams", type=int, default=2)
     parser.add_argument("--fraction", type=float, default= 1.0)
-    parser.add_argument("--metrics", type=str, default="teacher-forcing")
     parser.add_argument('--text', type=str, default='Bình mnh ơi day ch ưa, café xáng vớitôi dược không?')
     args = parser.parse_args()
 
@@ -67,4 +66,4 @@ if __name__ == "__main__":
 
     load_weights(corrector.model, weight_path)
 
-    corrector.evaluate(test_dataset, metrics = args.metrics, beams = args.beams)
+    corrector.evaluate(test_dataset, beams = args.beams)
