@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from tqdm import tqdm
+from math import ceil
 
 def load_vsec_dataset(base_path, corr_file, incorr_file):
     # load files
@@ -71,7 +72,7 @@ def load_epoch_dataset(base_path, corr_file, incorr_file, length_file, epoch: in
     opfile.close()
     print(f"Number of training datas: {count} examples!")
     
-    epochdataset_examples = 1 / num_epoch * count
+    epochdataset_examples = int(ceil(1 / num_epoch * count))
     start_index = epochdataset_examples * (epoch - 1)
     end_index = start_index + epochdataset_examples
 
