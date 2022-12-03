@@ -51,7 +51,7 @@ class Trainer():
         self.valid_data = DataLoader(dataset=valid_dataset, batch_sampler=self.valid_sampler,
                                       collate_fn=model_wrapper.collator.collate, num_workers=2, pin_memory=True)
 
-        self.total_training_steps = int(len(self.train_dataset) * EPOCHS)
+        self.total_training_steps = len(self.train_dataset) * EPOCHS
 
         self.checkpoint_cycle = math.ceil((len(self.train_data) * EPOCHS / CHECKPOINT_FREQ) / PRINT_PER_ITER) * PRINT_PER_ITER
 
