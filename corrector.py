@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     weight_ext = 'pth'
 
-    checkpoint_dir = os.path.join(args.data_path, f'checkpoints/{args.model}/{args.dataset}')
+    checkpoint_dir = os.path.join(args.data_path, f'checkpoints/{args.model}')
 
     weight_path = os.path.join(checkpoint_dir, f'{args.dataset}.weights.{weight_ext}')
     vocab_path = os.path.join(args.data_path, f'binhvq/binhvq.vocab.pkl')
