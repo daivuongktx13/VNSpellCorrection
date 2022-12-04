@@ -123,19 +123,6 @@ def load_epoch_dataset(base_path, corr_file, incorr_file, length_file, epoch: in
     print(f"loaded tuples of (incorr, corr, length) examples from {base_path}")
     return data
 
-def train_validation_split(data, train_ratio, seed):
-    np.random.seed(seed)
-    len_ = len(data)
-    train_len_ = int(np.ceil(train_ratio * len_))
-    inds_shuffled = np.arange(len_)
-    np.random.shuffle(inds_shuffled)
-    train_data = []
-    for ind in inds_shuffled[:train_len_]:
-        train_data.append(data[ind])
-    validation_data = []
-    for ind in inds_shuffled[train_len_:]:
-        validation_data.append(data[ind])
-    return train_data, validation_data
 
 
 

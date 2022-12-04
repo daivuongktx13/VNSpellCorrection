@@ -1,5 +1,5 @@
 import os
-from dataset.util import load_dataset, train_validation_split
+from dataset.util import load_dataset
 from dataset.vocab import Vocab
 
 if __name__ == '__main__':
