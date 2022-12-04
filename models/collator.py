@@ -73,7 +73,6 @@ class DataCollatorForCharacterTransformer(PTCollator):
         data = dict()
         data['batch_src'] = batch_srcs
         data['noised_texts'] = noised
-        data['label_texts'] = labels
         data['attn_masks'] = batch_attention_masks
         return data    
         

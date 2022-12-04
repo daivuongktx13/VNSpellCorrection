@@ -20,7 +20,7 @@ class TokenAligner():
         tokens = [token for token in tokens if token not in [" @@", " "]]
         encoded = self.tokenizer.encode_plus(tokens, return_tensors = "pt")
         token_ids = encoded['input_ids'].squeeze(0)
-        attn_mask = encoded['attention_mask']
+        attn_mask = encoded['attention_mask'].squeeze(0)
         return tokens, token_ids, attn_mask
     
     def char_tokenize(self, batch_texts):
