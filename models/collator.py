@@ -65,7 +65,6 @@ class DataCollatorForCharacterTransformer(PTCollator):
     def collate_correct(self, dataloader_batch):
         noised, labels = [], []
         for sample in dataloader_batch:
-            labels.append(sample[0])
             noised.append(sample[1])
 
         batch_srcs, batch_attention_masks= self.tokenAligner.tokenize_for_transformer_with_tokenization(noised)

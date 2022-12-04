@@ -150,7 +150,7 @@ class Trainer():
             self.current_epoch = epoch_id
             if self.progress_epoch and self.progress_epoch == epoch_id:
                 self.progress_epoch = None
-            elif self.start_epoch != 1:
+            elif self.current_epoch != 1:
                 self.load_lazy_dataset(epoch_id)
                 self.logger.log(f"Loaded lazy dataset {epoch_id} / {self.max_epochs}")
             else:
@@ -250,7 +250,6 @@ class Trainer():
                 break
 
             torch.cuda.empty_cache()
-            self.iter = 0
             self.scratch_iter = 0
 
             self.logger.log(f"END OF EPOCH {epoch_id}")

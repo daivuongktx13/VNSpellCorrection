@@ -29,7 +29,7 @@ class Corrector:
         with torch.no_grad():
             self.model.eval()
             batch_infer_start = time.time()
-            batch = self.model_wrapper.collator.collate([[batch, None,None, None]], type = "correct")
+            batch = self.model_wrapper.collator.collate([[None, batch,None, None]], type = "correct")
             
             result = self.model.inference(batch['batch_src'], num_beams = num_beams,
                  tokenAligner=self.model_wrapper.collator.tokenAligner)
