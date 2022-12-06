@@ -104,7 +104,7 @@ def load_epoch_dataset(base_path, corr_file, incorr_file, length_file, epoch: in
     for i, line in tqdm(enumerate(opfile1)):
         if line.strip() != "":
             if traverse_count >= start_index and traverse_count < end_index :
-                data[i].append(line.strip())
+                data[i - start_index].append(line.strip())
             elif traverse_count >= end_index:
                 break
         traverse_count += 1
@@ -114,7 +114,7 @@ def load_epoch_dataset(base_path, corr_file, incorr_file, length_file, epoch: in
     for i, line in tqdm(enumerate(opfile4)):
         if line.strip() != "":
             if traverse_count >= start_index and traverse_count < end_index :
-                data[i].append(int(line))
+                data[i - start_index].append(int(line))
             elif traverse_count >= end_index:
                 break
         traverse_count += 1
