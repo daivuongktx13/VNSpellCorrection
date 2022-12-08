@@ -194,7 +194,8 @@ class Trainer():
                         colored(str(dt.now()),"green"), epoch_id, val_loss, val_accu)
 
                     self.logger.log(info)
-                    self.logger.log(f"Overall trainning loss between two checkpoints: {overall_loss / overall_iter}")
+                    if overall_iter != 0 and overall_loss != 0:
+                        self.logger.log(f"Overall trainning loss between two checkpoints: {overall_loss / overall_iter}")
                     overall_loss, overall_iter = 0, 0
                     if val_accu > self.best_F1:
                         self.best_F1 = val_accu
@@ -226,7 +227,8 @@ class Trainer():
             info = '{} - epoch: {} - valid loss: {:.5f} - valid accuracy: {:.4f}'.format(
                         colored(str(dt.now()),"green"), epoch_id, val_loss, val_accu)  
             self.logger.log(info)
-            self.logger.log(f"Overall trainning loss between two checkpoints: {overall_loss / overall_iter}")
+            if overall_iter != 0 and overall_loss != 0:
+                self.logger.log(f"Overall trainning loss between two checkpoints: {overall_loss / overall_iter}")
             overall_loss, overall_iter = 0, 0
             if val_accu > self.best_F1:
                 self.best_F1 = val_accu
