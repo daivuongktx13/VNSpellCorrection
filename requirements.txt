@@ -12,3 +12,4 @@ underthesea
 transformers
 accelerate
 pickle5
+minineedle

@@ -2,6 +2,8 @@ from utils.logger import get_logger
 import numpy as np
 from rapidfuzz.distance.Levenshtein import normalized_distance
 import utils.diff_match_patch as dmp_module
+from minineedle import needle
+import multiprocessing
 
 
 def _get_mned_metric_from_TruePredict(true_text, predict_text):
@@ -27,103 +29,105 @@ def get_metric_for_tfm(batch_predicts, batch_targets, batch_length):
     return num_correct, num_wrong
 
 
-def diff_wordMode(text1, text2):
-  dmp = dmp_module.diff_match_patch()
-  a = dmp.diff_linesToWords(text1, text2)
-  lineText1 = a[0]
-  lineText2 = a[1]
-  lineArray = a[2]
-  diffs = dmp.diff_main(lineText1, lineText2, False)
-  dmp.diff_charsToLines(diffs, lineArray)
-  return diffs
+def allign_seq2trueseq(seq, true_seq, gap_symbol = "-"):
+    prev_sep = None
+    next_sep = None
+    seq_list = []
+    true_list = []
+    accumulate_true_word = ""
+    accumulate_pred_word = ""
+    assert len(true_seq) == len(seq)
+    for i in range(len(true_seq)):
+        if true_seq[i] != " ":
+            accumulate_true_word += true_seq[i]
+            accumulate_pred_word += seq[i]
+        else:
+            if seq[i] == gap_symbol:
+                next_sep = gap_symbol
+                if prev_sep != None and prev_sep == gap_symbol:
+                    accumulate_pred_word = "@@" + accumulate_pred_word
+                if next_sep != None and next_sep == gap_symbol:
+                    accumulate_pred_word = accumulate_pred_word + "@@"
+            else:
+                next_sep = " "
+                if prev_sep != None and prev_sep == gap_symbol:
+                    accumulate_pred_word = "@@" + accumulate_pred_word
+                if next_sep != None and next_sep == gap_symbol:
+                    accumulate_pred_word = accumulate_pred_word + "@@"
+            true_list.append(accumulate_true_word.replace(gap_symbol, ""))
+            seq_list.append(accumulate_pred_word)
+            accumulate_pred_word = ""
+            accumulate_true_word = ""
+            prev_sep = next_sep
+            next_sep = None   
+    return seq_list, true_list
 
-def get_misspelled(wrong_text, true_text):
-    diff = diff_wordMode(wrong_text, true_text)
-    num_words = 0
-    misspelled_indies = set()
-    misspelled_texts = list()
-    for pos, entry in enumerate(diff):
-        if entry[0] == -1:
-            continue
-        if entry[0] == 0:
-            words = entry[1].strip(" ").split(" ")
-            num_words += len(words)
-        if entry[0] == 1:
-            words = entry[1].strip(" ").split(" ")
-            for i in range(len(words)):
-                misspelled_indies.add(num_words + i)
-                misspelled_texts.append(words[i])
-            num_words += len(words)
-    return misspelled_indies, misspelled_texts
+def align_2seq2trueseq(wrong_text, pred_text, true_text, gap_symbol = "-"):
+    assert gap_symbol != None and len(gap_symbol) == 1
+    obj = needle.NeedlemanWunsch(wrong_text, true_text)
+    obj.align()
+    obj.gap_character = gap_symbol
+    seq1, true_seq = obj.get_aligned_sequences("str")
+    seq1_list, true_list = allign_seq2trueseq(seq1, true_seq, gap_symbol)
+    obj = needle.NeedlemanWunsch(pred_text, true_text)
+    obj.align()
+    obj.gap_character = gap_symbol
+    seq2, true_seq = obj.get_aligned_sequences("str")
+    seq2_list, _ = allign_seq2trueseq(seq2, true_seq, gap_symbol)
+    return list(zip(seq1_list, seq2_list, true_list))
 
-def get_restored(predict_text, true_text):
-    diff = diff_wordMode(predict_text, true_text)
-    num_words = 0
-    restored_indies = set()
-    restored_texts = list()
-    for pos, entry in enumerate(diff):
-        if entry[0] == -1:
-            continue
-        if entry[0] == 1:
-            words = entry[1].strip(" ").split(" ")
-            num_words += len(words)
-        if entry[0] == 0:
-            words = entry[1].strip(" ").split(" ")
-            for i in range(len(words)):
-                restored_indies.add(num_words + i)
-                restored_texts.append(words[i])
-            num_words += len(words)
-    return restored_indies, restored_texts
+def _get_metric_from_TrueWrongPredictV3(true_text, wrong_text, predict_text, vocab = None):
+    gap_symbol = None
+    if vocab != None:
+        all_symbols = set(list(vocab.chartoken2idx.keys())[4:])
+        symbols = set(list(wrong_text + predict_text + true_text))
+        usable_symbols = all_symbols.difference(symbols)
+        assert len(usable_symbols) > 0
+        if "-" not in usable_symbols:
+            gap_symbol = usable_symbols.pop()
+        else:
+            gap_symbol = "-"
+    gap_symbol = gap_symbol if gap_symbol != None else "-"
 
-def get_changed(predict_text, wrong_text):
-    diff = diff_wordMode(predict_text, wrong_text)
-    num_words = 0
-    changed_indies = set()
-    changed_texts = list()
-    for pos, entry in enumerate(diff):
-        if entry[0] == -1:
-            continue
-        if entry[0] == 0:
-            words = entry[1].strip(" ").split(" ")
-            num_words += len(words)
-        if entry[0] == 1:
-            words = entry[1].strip(" ").split(" ")
-            for i in range(len(words)):
-                changed_indies.add(num_words + i)
-                changed_texts.append(words[i])
-            num_words += len(words)
-    return changed_indies, changed_texts
+    alignment = align_2seq2trueseq(wrong_text, predict_text, true_text, gap_symbol)
+    TP, FP, FN = 0, 0, 0
+    for wrong, predict, true in alignment:
+        if wrong == true:
+            if predict[:-2] == true:
+                pass
+            elif predict != true:
+                if len(predict.split(" ")) == len(true.split(" ")):
+                    FP += 1
+                else:
+                    penalty = len(predict.split(" ")) - len(true.split(" "))
+                    assert penalty > 0
+                    FP += penalty
+        else:
+            if predict == true:
+                TP += 1
+            else:
+                if len(predict.split(" ")) == len(true.split(" ")):
+                    FN += 1
+                else:
+                    penalty = len(predict.split(" ")) - len(true.split(" "))
+                    assert penalty > 0
+                    FN += penalty
 
-def get_not_misspelled(wrong_text, true_text):
-    diff = diff_wordMode(wrong_text, true_text)
-    num_words = 0
-    not_misspelled_indies = set()
-    not_misspelled_texts = list()
-    for pos, entry in enumerate(diff):
-        if entry[0] == 1:
-            continue
-        if entry[0] == 0:
-            words = entry[1].strip(" ").split(" ")
-            for i in range(len(words)):
-                not_misspelled_indies.add(num_words + i)
-                not_misspelled_texts.append(words[i])
-            num_words += len(words)
-        if entry[0] == -1:
-            words = entry[1].strip(" ").split(" ")
-            num_words += len(words)
-    return not_misspelled_indies, not_misspelled_texts
+    return TP, FP, FN 
 
-def _get_metric_from_TrueWrongPredictV2(true_text, wrong_text, predict_text):
-    TP = get_misspelled(wrong_text, true_text)[0].intersection(get_restored(predict_text, true_text)[0])
-    FP = get_not_misspelled(wrong_text, true_text)[0].intersection(get_changed(predict_text, wrong_text)[0])
-    FN = get_misspelled(wrong_text, true_text)[0].difference(get_restored(predict_text, true_text)[0])
-    return len(TP), len(FP), len(FN)
+def worker_task(true_text, wrong_text, predict_text, vocab):
+    _TP, _FP, _FN = _get_metric_from_TrueWrongPredictV3(true_text, wrong_text, predict_text, vocab)
+    return (_TP, _FP, _FN)
 
-def get_metric_from_TrueWrongPredictV2(batch_true_text, batch_wrong_text, batch_predict_text): 
+from multiprocessing import Pool
+def get_metric_from_TrueWrongPredictV3(batch_true_text, batch_wrong_text, batch_predict_text, vocab = None):
+    assert vocab != None
     TPs, FPs, FNs = 0, 0, 0
-    for true_text, wrong_text, predict_text in zip(batch_true_text, batch_wrong_text, batch_predict_text): 
-        TP, FP, FN = _get_metric_from_TrueWrongPredictV2(true_text, wrong_text, predict_text)
-        TPs += TP
-        FPs += FP
-        FNs += FN
+    with Pool(multiprocessing.cpu_count()) as pool:
+        data = [(true_text, wrong_text, pred_text, vocab) for true_text, wrong_text, pred_text in zip(batch_true_text, batch_wrong_text, batch_predict_text)]
+        result = pool.starmap_async(worker_task, data)
+        for result in result.get():
+            TPs += result[0]
+            FPs += result[1]
+            FNs += result[2]
     return TPs, FPs, FNs

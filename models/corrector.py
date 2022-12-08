@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from datetime import datetime as dt
 from params import *
 from models.model import ModelWrapper
-from utils.metrics import get_mned_metric_from_TruePredict, get_metric_from_TrueWrongPredictV2
+from utils.metrics import get_mned_metric_from_TruePredict, get_metric_from_TrueWrongPredictV3
 from utils.logger import get_logger
 from models.sampler import RandomBatchSampler, BucketBatchSampler
 from termcolor import colored
@@ -84,7 +84,7 @@ class Corrector:
 
                 batch_infer_time = time.time() - batch_infer_start
 
-                _TP, _FP, _FN = get_metric_from_TrueWrongPredictV2(batch_label_texts, batch_noised_texts, batch_predictions)
+                _TP, _FP, _FN = get_metric_from_TrueWrongPredictV3(batch_label_texts, batch_noised_texts, batch_predictions)
 
                 TP += _TP
                 FP += _FP
