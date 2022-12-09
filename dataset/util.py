@@ -23,7 +23,7 @@ def load_vsec_dataset(base_path, corr_file, incorr_file):
     assert len(incorr_data) == len(corr_data)
 
     data = []
-    for x, y in zip(incorr_data, corr_data):
+    for x, y in zip(corr_data, incorr_data):
         data.append((x, y))
 
     print(f"loaded tuples of (incorr, corr) examples from {base_path}")
