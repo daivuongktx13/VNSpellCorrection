@@ -84,7 +84,7 @@ class Corrector:
 
                 batch_infer_time = time.time() - batch_infer_start
 
-                _TP, _FP, _FN = get_metric_from_TrueWrongPredictV3(batch_label_texts, batch_noised_texts, batch_predictions)
+                _TP, _FP, _FN = get_metric_from_TrueWrongPredictV3(batch_label_texts, batch_noised_texts, batch_predictions, self.model_wrapper.tokenAligner.vocab)
 
                 TP += _TP
                 FP += _FP
