@@ -1,10 +1,9 @@
 from utils.logger import get_logger
 import numpy as np
 from rapidfuzz.distance.Levenshtein import normalized_distance
-import utils.diff_match_patch as dmp_module
-from minineedle import needle
 import multiprocessing
-
+import time
+import utils.alignment as alignment
 
 def _get_mned_metric_from_TruePredict(true_text, predict_text):
     return normalized_distance(predict_text, true_text)
@@ -64,15 +63,9 @@ def allign_seq2trueseq(seq, true_seq, gap_symbol = "-"):
 
 def align_2seq2trueseq(wrong_text, pred_text, true_text, gap_symbol = "-"):
     assert gap_symbol != None and len(gap_symbol) == 1
-    obj = needle.NeedlemanWunsch(wrong_text, true_text)
-    obj.align()
-    obj.gap_character = gap_symbol
-    seq1, true_seq = obj.get_aligned_sequences("str")
+    seq1, true_seq = alignment.needle(wrong_text, true_text, gap_symbol)
     seq1_list, true_list = allign_seq2trueseq(seq1, true_seq, gap_symbol)
-    obj = needle.NeedlemanWunsch(pred_text, true_text)
-    obj.align()
-    obj.gap_character = gap_symbol
-    seq2, true_seq = obj.get_aligned_sequences("str")
+    seq2, true_seq = alignment.needle(pred_text, true_text, gap_symbol)
     seq2_list, _ = allign_seq2trueseq(seq2, true_seq, gap_symbol)
     return list(zip(seq1_list, seq2_list, true_list))
 
@@ -118,7 +111,7 @@ def _get_metric_from_TrueWrongPredictV3(true_text, wrong_text, predict_text, voc
 def worker_task(true_text, wrong_text, predict_text, vocab):
     _TP, _FP, _FN = _get_metric_from_TrueWrongPredictV3(true_text, wrong_text, predict_text, vocab)
     return (_TP, _FP, _FN)
-
+twp_logger = get_logger(f"./log/true_wrong_predict{time.time()}.log")
 from multiprocessing import Pool
 def get_metric_from_TrueWrongPredictV3(batch_true_text, batch_wrong_text, batch_predict_text, vocab = None):
     assert vocab != None
@@ -126,8 +119,12 @@ def get_metric_from_TrueWrongPredictV3(batch_true_text, batch_wrong_text, batch_
     with Pool(multiprocessing.cpu_count()) as pool:
         data = [(true_text, wrong_text, pred_text, vocab) for true_text, wrong_text, pred_text in zip(batch_true_text, batch_wrong_text, batch_predict_text)]
         result = pool.starmap_async(worker_task, data)
-        for result in result.get():
+        for i, result in enumerate(result.get()):
             TPs += result[0]
             FPs += result[1]
             FNs += result[2]
+            twp_logger.log(batch_true_text[i], file_only=True)
+            twp_logger.log(batch_wrong_text[i], file_only=True)
+            twp_logger.log(batch_predict_text[i], file_only=True)
+            twp_logger.log(f"{result[0]} - {result[1]} - {result[2]}", file_only=True)
     return TPs, FPs, FNs

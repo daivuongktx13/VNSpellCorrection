@@ -5,10 +5,11 @@ from viet_text_tools import normalize_diacritics
 sys.path.append("..")
 from utils.logger import get_logger
 import re
-vsec_path = "../data/vi/datasets/vsec/VSEC.jsonl"
-test_file = open("../data/vi/datasets/vsec/vsec.test", "w+")
-test_noise_file = open("../data/vi/datasets/vsec/vsec.test.noise", "w+")
-logger = get_logger("log/violated_cases_prepare.log")
+from os.path import exists
+vsec_path = "../data/vsec/VSEC.jsonl"
+assert exists(vsec_path), "VSEC.jsonl should be putted at '../data/vsec/VSEC.jsonl'"
+test_file = open("../data/vsec/vsec.test", "w+")
+test_noise_file = open("../data/vsec/vsec.test.noise", "w+")
 
 with open(vsec_path, "r") as file:
     data = [json.loads(x[0:-1]) for x in file.readlines()]
