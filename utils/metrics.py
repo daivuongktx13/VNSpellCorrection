@@ -116,7 +116,7 @@ from multiprocessing import Pool
 def get_metric_from_TrueWrongPredictV3(batch_true_text, batch_wrong_text, batch_predict_text, vocab = None):
     assert vocab != None
     TPs, FPs, FNs = 0, 0, 0
-    with Pool(multiprocessing.cpu_count()) as pool:
+    with Pool(int(multiprocessing.cpu_count() / 3)) as pool:
         data = [(true_text, wrong_text, pred_text, vocab) for true_text, wrong_text, pred_text in zip(batch_true_text, batch_wrong_text, batch_predict_text)]
         result = pool.starmap_async(worker_task, data)
         for i, result in enumerate(result.get()):

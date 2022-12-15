@@ -5,29 +5,9 @@ from viet_text_tools import normalize_diacritics
 sys.path.append("..")
 from utils.logger import get_logger
 import re
-from os.path import exists
-import argparse
-
-
-
-
-description = '''
-        prepare_vsec.py:
-
-        Usage: python prepare_vsec.py --data_path ./data
-
-        Params:
-            --data_path:    default to ./data     
-    '''
-parser = argparse.ArgumentParser(description=description)
-parser.add_argument('--data_path', type=str, default='../data')
-args = parser.parse_args()
-
-
-vsec_path = f"{args.data_path}/vsec/VSEC.jsonl"
-assert exists(vsec_path), f"VSEC.jsonl should be putted at '{args.data_path}/vsec/VSEC.jsonl'"
-test_file = open(f"{args.data_path}/vsec/vsec.test", "w+")
-test_noise_file = open(f"{args.data_path}/vsec/vsec.test.noise", "w+")
+vsec_path = "../data/vsec/VSEC.jsonl"
+test_file = open("../data/vsec/vsec.test", "w+")
+test_noise_file = open("../data/vsec/vsec.test.noise", "w+")
 
 with open(vsec_path, "r") as file:
     data = [json.loads(x[0:-1]) for x in file.readlines()]
