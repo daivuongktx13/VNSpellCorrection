@@ -5,8 +5,10 @@ import re
 import unidecode
 import nltk
 import json
+import os
+real_file_path = "\\".join(os.path.realpath(__file__).split("\\")[:-1])
 nltk.download('punkt')
-from vocab import Vocab
+from dataset.vocab import Vocab
 from ast import literal_eval
 
 class SynthesizeData(object):
@@ -24,9 +26,9 @@ class SynthesizeData(object):
         self.vn_alphabet = ['a', 'ă', 'â', 'b', 'c', 'd', 'đ', 'e', 'ê', 'g', 'h', 'i', 'k', 'l', 'm', 'n', 'o', 'ô',
                             'ơ', 'p', 'q', 'r', 's', 't', 'u', 'ư', 'v', 'x', 'y']
         self.alphabet_len = len(self.vn_alphabet)
-        self.word_couples = [pair.strip("\n").split(" ") for pair in open("noising_resources/kieu_go_dau_cu_moi.txt", "r", encoding='utf-8').readlines()]
-        self.homowords = literal_eval(open("noising_resources/confusion_set.json", "r", encoding='utf-8').read())
-        self.homo_leters_dict = literal_eval(open("noising_resources/homo_leter.json", "r", encoding='utf-8').read())
+        self.word_couples = [pair.strip("\n").split(" ") for pair in open(os.path.join(real_file_path, "noising_resources/kieu_go_dau_cu_moi.txt"), "r", encoding='utf-8').readlines()]
+        self.homowords = literal_eval(open( os.path.join(real_file_path, "noising_resources/confusion_set.json"), "r", encoding='utf-8').read())
+        self.homo_leters_dict = literal_eval(open( os.path.join(real_file_path, "noising_resources/homo_leter.json"), "r", encoding='utf-8').read())
 
         self.teencode_dict = {'mình': ['mk', 'mik', 'mjk'], 'vô': ['zô', 'zo', 'vo'], 'vậy': ['zậy', 'z', 'zay', 'za'],
                               'phải': ['fải', 'fai', ], 'biết': ['bit', 'biet'],
@@ -36,7 +38,7 @@ class SynthesizeData(object):
                               'tôi': ['t'], 'chồng': ['ck'], 'vợ': ['vk']
                               }
 
-        self.typo = json.load(open("noising_resources/typo.json", "r", encoding='utf-8'))
+        self.typo = json.load( open(os.path.join(real_file_path,"noising_resources/typo.json"), "r", encoding='utf-8'))
         self.all_char_candidates = self.get_all_char_candidates()
         self.all_word_candidates = self.get_all_word_candidates()
 
