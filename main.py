@@ -34,7 +34,7 @@ def read_root():
 
 
 @app.get("/spelling/")
-def read_string(string: Union[str, None] = None):
+def correct(string: Union[str, None] = None):
     out = corrector.correct_transfomer_with_tr(string, num_beams=1)
     t = re.sub(r"(\s*)([.,:?!;]{1})(\s*)", r"\2\3", out['predict_text'][0])
     t = re.sub(r"((?P<parenthesis>\()\s)", r"\g<parenthesis>", t)
@@ -44,8 +44,15 @@ def read_string(string: Union[str, None] = None):
     t = re.sub(r"([\'\"])\s(.*)\s([\'\"])", r"\1\2\3", t)
     out['predict_text']= re.sub(r"\s(%)", "%", t)
     return out
-@app.get("/make_noise")
-def make_incorrect(string: Union[str, None] = None):
+    
+@app.get("/splme_noise")
+def split_merge_noise(string: Union[str, None] = None):
     text = " ".join(re.findall("\w+|[^\w\s]{1}", string))
     noised_text, onehot_label = noiser.add_split_merge_noise(text, percent_err=0.3, percent_normal_err=0.3)
+    return noised_text
+
+@app.get("/norm_noise")
+def normal_noise(string: Union[str, None] = None):
+    text = " ".join(re.findall("\w+|[^\w\s]{1}", string))
+    noised_text, onehot_label = noiser.add_normal_noise(text, percent_err=0.3)
     return noised_text
