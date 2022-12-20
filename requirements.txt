@@ -12,3 +12,5 @@ underthesea
 transformers
 accelerate
 pickle5
+torch
+termcolor
